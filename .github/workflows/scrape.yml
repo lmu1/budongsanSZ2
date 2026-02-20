@@ -1,20 +1,22 @@
 diff --git a/.github/workflows/scrape.yml b/.github/workflows/scrape.yml
-index 80afca997eccdb2777dbfd36d5e552e13856e7cb..a82012bbce6358cce85ddc895eca854158eafc88 100644
+index 80afca997eccdb2777dbfd36d5e552e13856e7cb..354965b0aeaed2c88516467ee30ebea7bd498745 100644
 --- a/.github/workflows/scrape.yml
 +++ b/.github/workflows/scrape.yml
 @@ -1,45 +1,59 @@
 -name: Daily Real Estate News Scrape
 +name: Daily Real Estate Signal Scraper
  
- on:
+-on:
++"on":
    schedule:
 -    - cron: '30 23 * * *'
+-  workflow_dispatch:
 +    - cron: "30 23 * * *"
-   workflow_dispatch:
- 
++  workflow_dispatch: {}
++
 +permissions:
 +  contents: write
-+
+ 
  jobs:
    scrape-and-commit:
      runs-on: ubuntu-latest
