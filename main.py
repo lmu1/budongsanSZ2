@@ -11,7 +11,7 @@ from bs4 import BeautifulSoup
 
 # --- 설정부 ---
 QUERY = "부동산 전망"
-TARGET_COUNT = 5 
+TARGET_COUNT = 30 
 CSV_PATH = "news_data.csv"
 
 def get_env(name: str) -> str:
@@ -39,9 +39,12 @@ def setup_gemini(api_key: str):
     genai.configure(api_key=api_key)
     try:
         available_models = [m.name.replace('models/', '') for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
-        for pref in ["gemini-2.5-flash", "gemini-1.5-flash", "gemini-pro"]:
+        
+        # 🔥 2.5 버전은 하루 20개 제한이므로 삭제! 
+        # 하루 1,500개 무료인 1.5-flash를 최우선으로 찾습니다.
+        for pref in ["gemini-1.5-flash", "gemini-pro"]:
             if pref in available_models:
-                print(f"✅ 사용 모델: {pref} (안전빵 20초 대기 모드)")
+                print(f"✅ 사용 모델: {pref} (하루 1500건 넉넉한 모델)")
                 return genai.GenerativeModel(pref)
     except Exception as e:
         print(f"모델 탐색 실패: {e}")
@@ -73,7 +76,6 @@ def main():
         link = item.get("originallink") or item.get("link")
         meta = extract_article_metadata(link)
         
-        # 🔥 요약 길이를 완벽하게 통제하는 강력한 프롬프트
         prompt = f"""부동산 전문가로서 아래 기사를 분석해 줘.
 [중요] 요약은 반드시 3문장(3줄) 이내로 끝내야 해. 절대 3문장을 초과하지 마.
 부동산과 무관한 정치/단순사회/사건사고 기사면 요약하지 말고 "Signal: INVALID"라고만 답해.
@@ -88,14 +90,14 @@ Signal: (BULL/BEAR/FLAT)
 """
 
         try:
-            print(f"⏳ 구글 API 제한 방어 중: 20초 대기... (현재 {len(analyzed)}/30 완료)")
-            time.sleep(20) 
+            # 1.5-flash는 제한이 넉넉하지만, 안전하게 5초만 대기합니다. (속도 대폭 향상!)
+            print(f"⏳ 대기 중... (현재 {len(analyzed)}/30 완료)")
+            time.sleep(5) 
             
             response = model.generate_content(prompt)
             text = response.text
             
             if "INVALID" in text.upper():
-                print(f"🚫 무관한 기사 패스 (정치/사회)")
                 error_count = 0 
                 continue
 
@@ -117,13 +119,11 @@ Signal: (BULL/BEAR/FLAT)
         except Exception as e:
             print(f"⚠️ 오류 발생: {e}")
             error_count += 1
-            time.sleep(30) 
+            time.sleep(15) 
 
     if analyzed:
         pd.DataFrame(analyzed).to_csv(CSV_PATH, index=False, encoding="utf-8-sig")
         print(f"🎉 총 {len(analyzed)}건 안전하게 저장 완료 후 종료합니다.")
-    else:
-        print("저장할 기사가 없습니다.")
 
 if __name__ == "__main__":
     main()
