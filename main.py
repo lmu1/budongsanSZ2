@@ -180,7 +180,7 @@ def summarize_with_gemini(api_key: str, article: Dict[str, str]) -> Dict[str, st
     genai.configure(api_key=api_key)
     
     # 💡 최신 Gemini 3.1 Pro 모델 사용
-    model = genai.GenerativeModel("gemini-3.1-pro")
+    model = genai.GenerativeModel("gemini-1.5-pro")
 
     content = article.get("content") or article.get("description")
     
