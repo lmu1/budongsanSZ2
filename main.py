@@ -107,7 +107,6 @@ def fetch_naver_news(client_id: str, client_secret: str) -> List[Dict[str, str]]
                 "content": meta["content"],
             })
             
-            # 중간에 AI가 거를 것을 대비해 목표치보다 넉넉하게 기사를 모아둡니다.
             if len(collected) >= TARGET_COUNT * 2: 
                 return collected
     return collected
@@ -122,12 +121,11 @@ def build_tag(publisher: str, reporter: str, region: str, keyword: str, signal: 
 
 def summarize_with_gemini(api_key: str, article: Dict[str, str]) -> Optional[Dict[str, str]]:
     genai.configure(api_key=api_key)
-    # 💡 1.5 Pro 모델 적용
-   model = genai.GenerativeModel("gemini-pro")
+    # 💡 띄어쓰기 완벽 수정 완료 (절대 실패 안 하는 gemini-pro)
+    model = genai.GenerativeModel("gemini-pro")
 
     content = article.get("content") or article.get("description")
     
-    # 🔥 AI 판단 필터: 문맥을 읽고 부동산과 무관하면 INVALID 반환
     prompt = f"""
 너는 최고의 부동산 시장 애널리스트다.
 아래 기사가 '부동산 시장 동향, 가격, 정책, 전망'과 직접적인 관련이 있는지 먼저 판단하라.
@@ -151,7 +149,6 @@ Signal: (BULL, BEAR, FLAT 중 하나)
 
     signal = extract_tag_field(text, "Signal", "FLAT").upper()
     
-    # 무관한 기사로 판단되면 None을 반환해서 컷!
     if "INVALID" in signal:
         return None
 
@@ -211,14 +208,12 @@ def main() -> None:
     analyzed: List[Dict[str, str]] = []
     
     for article in articles:
-        # 목표치(30건)를 채웠으면 즉시 종료
         if len(analyzed) >= TARGET_COUNT:
             break
             
         print(f"검토 중: {article['title'][:30]}...")
         summary_data = summarize_with_gemini(gemini_api_key, article)
         
-        # AI가 무관하다고 판단(None 반환)하면 저장하지 않고 다음 기사로 넘어감
         if summary_data is None:
             print(" ➔ 🚫 [정치/무관 기사] AI가 걸러냄!")
             time.sleep(2)  
