@@ -26,7 +26,8 @@ def find_source_files(root: Path) -> list[Path]:
 def load_sources(files: list[Path]) -> pd.DataFrame:
     frames: list[pd.DataFrame] = []
     for file in files:
-        df = pd.read_csv(file)
+        # 💡 한글 깨짐 및 에러 방지를 위해 encoding="utf-8-sig" 추가!
+        df = pd.read_csv(file, encoding="utf-8-sig")
         missing = [c for c in REQUIRED_COLUMNS if c not in df.columns]
         if missing:
             raise ValueError(f"Missing columns in {file}: {missing}")
