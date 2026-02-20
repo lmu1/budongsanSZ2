@@ -11,6 +11,11 @@ import pandas as pd
 import requests
 from bs4 import BeautifulSoup
 
+# ==========================================
+# 🛑 품질 낮은 언론사/기자 제거 필터 (여기에 이름 추가!)
+# 이 리스트에 포함된 곳은 자동으로 거르고 다른 기사로 보충합니다.
+# 예시: ["조선일보", "특정경제신문"]
+# ==========================================
 EXCLUDE_PUBLISHERS: List[str] = []
 EXCLUDE_REPORTERS: List[str] = []
 
@@ -133,6 +138,7 @@ def fetch_naver_news(client_id: str, client_secret: str) -> List[Dict[str, str]]
             publisher = meta.get("publisher", "Unknown")
             reporter = meta.get("reporter", "Unknown")
 
+            # 💡 설정한 필터에 걸리면 크롤링을 건너뛰고 계속 검색을 진행합니다.
             if publisher in EXCLUDE_PUBLISHERS or reporter in EXCLUDE_REPORTERS:
                 continue
 
@@ -149,6 +155,7 @@ def fetch_naver_news(client_id: str, client_secret: str) -> List[Dict[str, str]]
                 }
             )
 
+            # 목표 개수(30건)를 꽉 채울 때까지 계속 보충해서 가져옵니다.
             if len(collected) >= TARGET_COUNT:
                 return collected
 
@@ -171,14 +178,17 @@ def build_tag(publisher: str, reporter: str, region: str, keyword: str, signal: 
 
 def summarize_with_gemini(api_key: str, article: Dict[str, str]) -> Dict[str, str]:
     genai.configure(api_key=api_key)
-    model = genai.GenerativeModel("gemini-1.5-flash")
+    
+    # 💡 최신 Gemini 3.1 Pro 모델 사용
+    model = genai.GenerativeModel("gemini-3.1-pro")
 
     content = article.get("content") or article.get("description")
     
-    # 💡 에러 방지 1: 기사 본문을 4000자에서 3000자로 살짝 줄여서 토큰 초과(용량 초과) 방지
+    # Pro 버전의 이해력을 살린 프롬프트 (안정성을 위해 3000자로 제한)
     prompt = f"""
-너는 부동산 시장 애널리스트다.
-아래 기사 내용을 2~4문장으로 핵심 요약하고, 마지막에 다음 정보를 각각 한 줄로 출력하라:
+너는 최고의 부동산 시장 애널리스트다.
+아래 기사 내용을 심층적으로 분석하여 2~4문장으로 핵심만 명확하게 요약하라.
+마지막에는 다음 정보를 각각 반드시 한 줄씩 출력하라:
 Region: (한국 내 주요 지역 또는 전국)
 Keyword: (핵심단어 1~3개)
 Signal: (BULL, BEAR, FLAT 중 하나)
@@ -197,7 +207,6 @@ Signal: (BULL, BEAR, FLAT 중 하나)
     keyword = extract_tag_field(text, "Keyword", "부동산")
     signal = extract_tag_field(text, "Signal", "FLAT")
 
-    # 💡 에러 방지 2: 제미나이가 답변 형식을 틀렸을 때 발생하는 에러 처리
     try:
         summary_part = re.split(r"\n\s*Region\s*:", text, maxsplit=1, flags=re.IGNORECASE)[0].strip()
     except Exception:
@@ -217,7 +226,6 @@ Signal: (BULL, BEAR, FLAT 중 하나)
 
 
 def save_news_data(rows: List[Dict[str, str]]) -> None:
-    # 💡 에러 방지 3: 저장할 데이터가 0건일 때 에러 나는 것 방지
     if not rows:
         print("저장할 데이터가 없습니다.")
         return
@@ -255,7 +263,6 @@ def main() -> None:
         print("수집된 기사가 없습니다.")
         return
 
-    # 💡 에러 방지 4: 30건이 안 돼도 에러 띄우지 않고 모인 만큼만 처리
     process_count = min(current_count, TARGET_COUNT)
     print(f"[{datetime.now()}] 총 {current_count}건 중 {process_count}건 제미나이 요약 시작 (5초 간격)")
 
@@ -265,7 +272,6 @@ def main() -> None:
         
         analyzed.append(summarize_with_gemini(gemini_api_key, article))
         
-        # 💡 핵심 쿨타임: 마지막 기사가 아닐 때만 5초 대기 (무료 버전 제한 방지)
         if i < process_count - 1:
             time.sleep(5)
 
