@@ -11,10 +11,7 @@ import pandas as pd
 import requests
 from bs4 import BeautifulSoup
 
-EXCLUDE_PUBLISHERS: List[str] = []
-EXCLUDE_REPORTERS: List[str] = []
-
-NAVER_API_URL = "https://openapi.naver.com/v1/search/news.json"
+# --- 설정부 ---
 QUERY = "부동산 전망"
 TARGET_COUNT = 30
 CSV_PATH = "news_data.csv"
@@ -22,231 +19,121 @@ CSV_PATH = "news_data.csv"
 def get_env(name: str) -> str:
     value = os.getenv(name)
     if not value:
-        raise EnvironmentError(f"환경변수 {name} 가 설정되어 있지 않습니다.")
+        raise EnvironmentError(f"환경변수 {name}가 설정되지 않았습니다.")
     return value
 
 def clean_html(raw_text: str) -> str:
-    no_tag = re.sub(r"<[^>]+>", "", raw_text or "")
-    return html.unescape(no_tag).strip()
-
-def parse_pub_date(pub_date: str) -> str:
-    try:
-        dt = parsedate_to_datetime(pub_date)
-        return dt.isoformat()
-    except Exception:
-        return datetime.utcnow().isoformat()
+    return html.unescape(re.sub(r"<[^>]+>", "", raw_text or "")).strip()
 
 def extract_article_metadata(link: str) -> Dict[str, str]:
-    metadata = {"publisher": "Unknown", "reporter": "Unknown", "content": ""}
+    metadata = {"publisher": "Unknown", "content": ""}
     try:
         resp = requests.get(link, timeout=10, headers={"User-Agent": "Mozilla/5.0"})
-        resp.raise_for_status()
         soup = BeautifulSoup(resp.text, "html.parser")
-
-        publisher_candidates = [
-            soup.select_one("meta[property='og:article:author']"),
-            soup.select_one("meta[name='twitter:creator']"),
-            soup.select_one("meta[property='og:site_name']"),
-            soup.select_one("meta[name='newsct']"),
-            soup.select_one("a.media_end_head_top_logo img"),
-            soup.select_one("img.media_end_head_top_logo_img"),
-        ]
-        for candidate in publisher_candidates:
-            if not candidate: continue
-            value = candidate.get("content") or candidate.get("alt") or candidate.get_text(strip=True)
-            if value:
-                metadata["publisher"] = value.strip()
-                break
-
-        reporter_candidates = [
-            soup.select_one("meta[name='byl']"),
-            soup.select_one(".media_end_head_journalist_name"),
-            soup.select_one(".byline_s"),
-        ]
-        for candidate in reporter_candidates:
-            if not candidate: continue
-            value = candidate.get("content") or candidate.get_text(" ", strip=True)
-            if value:
-                metadata["reporter"] = re.sub(r"기자.*$", "기자", value).strip()
-                break
-
+        # 본문 및 언론사 추출 (네이버 뉴스 위주)
         content_node = soup.select_one("article#dic_area") or soup.select_one("#newsct_article") or soup.select_one("#articleBodyContents")
         if content_node:
-            metadata["content"] = re.sub(r"\s+", " ", content_node.get_text(" ", strip=True))
-    except Exception:
+            metadata["content"] = content_node.get_text(" ", strip=True)[:2500]
+        pub_meta = soup.select_one("meta[property='og:site_name']")
+        if pub_meta:
+            metadata["publisher"] = pub_meta.get("content", "Unknown")
+    except:
         pass
     return metadata
 
-def fetch_naver_news(client_id: str, client_secret: str) -> List[Dict[str, str]]:
-    headers = {"X-Naver-Client-Id": client_id, "X-Naver-Client-Secret": client_secret}
-    collected = []
-    seen_links = set()
-
-    for start in range(1, 1000, 100):
-        params = {"query": QUERY, "display": 100, "start": start, "sort": "date"}
-        res = requests.get(NAVER_API_URL, headers=headers, params=params, timeout=10)
-        res.raise_for_status()
-        items = res.json().get("items", [])
-        if not items: break
-
-        for item in items:
-            link = item.get("originallink") or item.get("link")
-            if not link or link in seen_links: continue
-            
-            meta = extract_article_metadata(link)
-            if meta["publisher"] in EXCLUDE_PUBLISHERS or meta["reporter"] in EXCLUDE_REPORTERS: continue
-            
-            seen_links.add(link)
-            collected.append({
-                "title": clean_html(item.get("title", "")),
-                "description": clean_html(item.get("description", "")),
-                "link": link,
-                "pub_date": parse_pub_date(item.get("pubDate", "")),
-                "publisher": meta["publisher"],
-                "reporter": meta["reporter"],
-                "content": meta["content"],
-            })
-            
-            if len(collected) >= TARGET_COUNT * 2: 
-                return collected
-    return collected
-
-# 🔥 [핵심 추가] 내 API 키가 허락하는 모델 목록을 서버에서 직접 조회하는 마법의 함수
-def get_best_model_name(api_key: str) -> str:
+# 🔥 [핵심] 사용 가능한 모델을 서버에서 직접 목록 받아와서 고르기
+def setup_gemini(api_key: str):
     genai.configure(api_key=api_key)
+    print("🔎 사용 가능한 모델 목록 조회 중...")
+    
+    available_models = []
     try:
-        available_models = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
+        for m in genai.list_models():
+            if 'generateContent' in m.supported_generation_methods:
+                # 'models/' 접두사를 제거하고 순수 이름만 보관
+                clean_name = m.name.replace('models/', '')
+                available_models.append(clean_name)
+                print(f" - 발견된 모델: {clean_name}")
     except Exception as e:
-        raise Exception(f"모델 목록 조회 실패. API 키가 유효한지 확인하세요: {e}")
-        
-    if not available_models:
-        raise Exception("이 API 키로 사용할 수 있는 제미나이 모델이 하나도 없습니다!")
-        
-    # 빠르고 가벼운 Flash 모델을 최우선으로 찾고, 없으면 구글이 주는 첫 번째 모델 무조건 사용
-    for pref in ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-pro"]:
-        for am in available_models:
-            if pref in am:
-                return am
-    return available_models[0]
-
-def extract_tag_field(response_text: str, field_name: str, default_value: str) -> str:
-    match = re.search(rf"{field_name}\s*:\s*([^\n\]]+)", response_text, flags=re.IGNORECASE)
-    return match.group(1).strip() if match else default_value
-
-def build_tag(publisher: str, reporter: str, region: str, keyword: str, signal: str) -> str:
-    sig = signal.upper().strip() if signal.upper().strip() in {"BULL", "BEAR", "FLAT"} else "FLAT"
-    return f"[{publisher} | {reporter} | {region} | {keyword} | {sig}]"
-
-def summarize_with_gemini(api_key: str, model_name: str, article: Dict[str, str]) -> Optional[Dict[str, str]]:
-    genai.configure(api_key=api_key)
-    model = genai.GenerativeModel(model_name)
-
-    content = article.get("content") or article.get("description")
-    
-    prompt = f"""
-너는 최고의 부동산 시장 애널리스트다.
-아래 기사가 '부동산 시장 동향, 가격, 정책, 전망'과 직접적인 관련이 있는지 먼저 판단하라.
-만약 부동산과 무관한 정치, 범죄, 단순 사회 기사라면 요약하지 말고 단 한 줄로 아래와 같이 출력하라:
-Signal: INVALID
-
-진짜 부동산 기사가 맞다면, 내용을 심층적으로 분석하여 2~4문장으로 핵심만 명확하게 요약하고 마지막에 다음 정보를 한 줄씩 출력하라:
-Region: (한국 내 주요 지역 또는 전국)
-Keyword: (핵심단어 1~3개)
-Signal: (BULL, BEAR, FLAT 중 하나)
-
-기사 제목: {article['title']}
-기사 본문: {content[:3000]}
-""".strip()
-
-    try:
-        response = model.generate_content(prompt)
-        text = (response.text or "").strip()
-    except Exception as exc:
-        text = f"요약 생성 실패: {exc}\nRegion: 전국\nKeyword: 부동산\nSignal: FLAT"
-
-    signal = extract_tag_field(text, "Signal", "FLAT").upper()
-    
-    if "INVALID" in signal:
+        print(f"❌ 모델 목록 조회 실패: {e}")
         return None
 
-    region = extract_tag_field(text, "Region", "전국")
-    keyword = extract_tag_field(text, "Keyword", "부동산")
+    # 선호 순위: flash -> pro -> 그 외 첫 번째
+    for pref in ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-pro"]:
+        if pref in available_models:
+            print(f"✅ 최종 선택된 모델: {pref}")
+            return genai.GenerativeModel(pref)
+    
+    if available_models:
+        print(f"⚠️ 선호 모델이 없어 첫 번째 모델({available_models[0]})을 선택합니다.")
+        return genai.GenerativeModel(available_models[0])
+    return None
 
-    try:
-        summary_part = re.split(r"\n\s*Region\s*:", text, maxsplit=1, flags=re.IGNORECASE)[0].strip()
-    except Exception:
-        summary_part = text
-
-    tag = build_tag(article["publisher"], article["reporter"], region, keyword, signal)
-
-    return {
-        **article,
-        "summary": f"{summary_part}\n\n{tag}",
-        "region": region,
-        "keyword": keyword,
-        "signal": signal if signal in {"BULL", "BEAR", "FLAT"} else "FLAT",
-        "tag": tag,
-        "collected_at": datetime.utcnow().isoformat(),
-    }
-
-def save_news_data(rows: List[Dict[str, str]]) -> None:
-    if not rows:
-        print("저장할 데이터가 없습니다.")
-        return
-    new_df = pd.DataFrame(rows)
-    if os.path.exists(CSV_PATH):
-        existing_df = pd.read_csv(CSV_PATH)
-        existing_links = set(existing_df.get("link", pd.Series(dtype=str)).dropna().tolist())
-        append_df = new_df[~new_df["link"].isin(existing_links)]
-        if append_df.empty:
-            print("새로 추가할 기사가 없습니다 (모두 중복).")
-            return
-        combined_df = pd.concat([existing_df, append_df], ignore_index=True)
-        combined_df = combined_df.drop_duplicates(subset=["link"], keep="first")
-        combined_df.to_csv(CSV_PATH, index=False, encoding="utf-8-sig")
-        print(f"기존 {len(existing_df)}건 + 신규 {len(append_df)}건 저장 완료")
-    else:
-        new_df.to_csv(CSV_PATH, index=False, encoding="utf-8-sig")
-        print(f"신규 {len(new_df)}건 저장 완료")
-
-def main() -> None:
+def main():
     client_id = get_env("NAVER_CLIENT_ID")
     client_secret = get_env("NAVER_CLIENT_SECRET")
     gemini_api_key = get_env("GEMINI_API_KEY")
 
-    # 1. 내 API 키로 쓸 수 있는 구글 서버의 모델 이름 강제 색출!
-    best_model = get_best_model_name(gemini_api_key)
-    print(f"[{datetime.now()}] 💡 구글 서버에서 허락한 최적의 모델 발견: {best_model}")
-
-    print(f"[{datetime.now()}] 네이버 뉴스 수집 시작...")
-    articles = fetch_naver_news(client_id, client_secret)
-    
-    if not articles:
-        print("수집된 기사가 없습니다.")
+    # 모델 설정
+    model = setup_gemini(gemini_api_key)
+    if not model:
+        print("❌ 사용할 수 있는 AI 모델이 없습니다. API 키를 확인하세요.")
         return
 
-    print(f"[{datetime.now()}] 수집된 기사 중 {TARGET_COUNT}건 엄선 요약 시작 (AI 문맥 필터 작동 중)")
-    analyzed: List[Dict[str, str]] = []
-    
-    for article in articles:
-        if len(analyzed) >= TARGET_COUNT:
-            break
-            
-        print(f"검토 중: {article['title'][:30]}...")
-        # 찾아낸 최고의 모델 이름을 함수에 넘겨줍니다.
-        summary_data = summarize_with_gemini(gemini_api_key, best_model, article)
-        
-        if summary_data is None:
-            print(" ➔ 🚫 [정치/무관 기사] AI가 걸러냄!")
-            time.sleep(2)  
-            continue
-            
-        analyzed.append(summary_data)
-        print(f" ➔ ✅ [완료] (현재 {len(analyzed)}/{TARGET_COUNT}건 확정)")
-        time.sleep(5)
+    # 네이버 뉴스 검색
+    print(f"🚀 '{QUERY}' 검색 시작...")
+    headers = {"X-Naver-Client-Id": client_id, "X-Naver-Client-Secret": client_secret}
+    params = {"query": QUERY, "display": 50, "sort": "date"}
+    res = requests.get("https://openapi.naver.com/v1/search/news.json", headers=headers, params=params)
+    items = res.json().get("items", [])
 
-    save_news_data(analyzed)
-    print(f"[{datetime.now()}] 찐 부동산 뉴스만 수집 및 요약 완료!")
+    analyzed = []
+    for item in items:
+        if len(analyzed) >= TARGET_COUNT: break
+        
+        link = item.get("originallink") or item.get("link")
+        meta = extract_article_metadata(link)
+        
+        prompt = f"""
+부동산 애널리스트로서 아래 기사를 3문장 이내로 요약해.
+정치/사회/사건사고 기사면 "Signal: INVALID"라고만 답해.
+
+제목: {clean_html(item['title'])}
+본문: {meta['content']}
+
+마지막에 아래 형식 추가:
+Region: 지역명
+Keyword: 키워드
+Signal: (BULL, BEAR, FLAT 중 하나)
+"""
+        try:
+            response = model.generate_content(prompt)
+            text = response.text
+            
+            if "INVALID" in text.upper():
+                print(f"🚫 건너뜀 (무관한 기사): {item['title'][:20]}...")
+                continue
+
+            signal = "FLAT"
+            if "BULL" in text.upper(): signal = "BULL"
+            elif "BEAR" in text.upper(): signal = "BEAR"
+
+            analyzed.append({
+                "title": clean_html(item['title']),
+                "link": link,
+                "summary": text.strip(),
+                "publisher": meta['publisher'],
+                "signal": signal,
+                "collected_at": datetime.now().strftime("%Y-%m-%d %H:%M")
+            })
+            print(f"✅ 요약 성공: {item['title'][:20]}...")
+            time.sleep(4) # 무료 할당량 보호
+        except Exception as e:
+            print(f"❌ 요약 중 오류 발생: {e}")
+
+    if analyzed:
+        pd.DataFrame(analyzed).to_csv(CSV_PATH, index=False, encoding="utf-8-sig")
+        print(f"🎉 총 {len(analyzed)}건 저장 완료!")
 
 if __name__ == "__main__":
     main()
