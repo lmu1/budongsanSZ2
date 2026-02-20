@@ -11,7 +11,7 @@ from bs4 import BeautifulSoup
 
 # --- 설정부 ---
 QUERY = "부동산 전망"
-TARGET_COUNT = 30 
+TARGET_COUNT = 5 
 CSV_PATH = "news_data.csv"
 
 def get_env(name: str) -> str:
