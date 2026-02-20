@@ -111,6 +111,24 @@ def fetch_naver_news(client_id: str, client_secret: str) -> List[Dict[str, str]]
                 return collected
     return collected
 
+# 🔥 [핵심 추가] 내 API 키가 허락하는 모델 목록을 서버에서 직접 조회하는 마법의 함수
+def get_best_model_name(api_key: str) -> str:
+    genai.configure(api_key=api_key)
+    try:
+        available_models = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
+    except Exception as e:
+        raise Exception(f"모델 목록 조회 실패. API 키가 유효한지 확인하세요: {e}")
+        
+    if not available_models:
+        raise Exception("이 API 키로 사용할 수 있는 제미나이 모델이 하나도 없습니다!")
+        
+    # 빠르고 가벼운 Flash 모델을 최우선으로 찾고, 없으면 구글이 주는 첫 번째 모델 무조건 사용
+    for pref in ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-pro"]:
+        for am in available_models:
+            if pref in am:
+                return am
+    return available_models[0]
+
 def extract_tag_field(response_text: str, field_name: str, default_value: str) -> str:
     match = re.search(rf"{field_name}\s*:\s*([^\n\]]+)", response_text, flags=re.IGNORECASE)
     return match.group(1).strip() if match else default_value
@@ -119,10 +137,9 @@ def build_tag(publisher: str, reporter: str, region: str, keyword: str, signal: 
     sig = signal.upper().strip() if signal.upper().strip() in {"BULL", "BEAR", "FLAT"} else "FLAT"
     return f"[{publisher} | {reporter} | {region} | {keyword} | {sig}]"
 
-def summarize_with_gemini(api_key: str, article: Dict[str, str]) -> Optional[Dict[str, str]]:
+def summarize_with_gemini(api_key: str, model_name: str, article: Dict[str, str]) -> Optional[Dict[str, str]]:
     genai.configure(api_key=api_key)
-    # 💡 띄어쓰기 완벽 수정 완료 (절대 실패 안 하는 gemini-pro)
-    model = genai.GenerativeModel("gemini-pro")
+    model = genai.GenerativeModel(model_name)
 
     content = article.get("content") or article.get("description")
     
@@ -197,6 +214,10 @@ def main() -> None:
     client_secret = get_env("NAVER_CLIENT_SECRET")
     gemini_api_key = get_env("GEMINI_API_KEY")
 
+    # 1. 내 API 키로 쓸 수 있는 구글 서버의 모델 이름 강제 색출!
+    best_model = get_best_model_name(gemini_api_key)
+    print(f"[{datetime.now()}] 💡 구글 서버에서 허락한 최적의 모델 발견: {best_model}")
+
     print(f"[{datetime.now()}] 네이버 뉴스 수집 시작...")
     articles = fetch_naver_news(client_id, client_secret)
     
@@ -212,7 +233,8 @@ def main() -> None:
             break
             
         print(f"검토 중: {article['title'][:30]}...")
-        summary_data = summarize_with_gemini(gemini_api_key, article)
+        # 찾아낸 최고의 모델 이름을 함수에 넘겨줍니다.
+        summary_data = summarize_with_gemini(gemini_api_key, best_model, article)
         
         if summary_data is None:
             print(" ➔ 🚫 [정치/무관 기사] AI가 걸러냄!")
