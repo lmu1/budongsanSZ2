@@ -3,58 +3,187 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>부동산 시그널 대시보드</title>
+    <title>R-ESTATE TERMINAL</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- PapaParse for CSV -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
     <style>
-        body { font-family: 'Malgun Gothic', sans-serif; padding: 20px; background: #f4f7f6; color: #333; }
-        h1 { color: #2c3e50; }
-        .filter-container { margin-bottom: 20px; }
-        .filter-btn { padding: 10px 15px; margin-right: 5px; cursor: pointer; border: none; border-radius: 5px; font-weight: bold; transition: 0.2s; }
-        .filter-btn:hover { opacity: 0.8; }
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Noto+Sans+KR:wght@400;700&display=swap');
+        
+        :root {
+            --terminal-bg: #000000;
+            --terminal-surface: #050505;
+            --terminal-header: #111111;
+            --terminal-border: #333333;
+            --terminal-accent: #00ffff;
+            --terminal-text: #ffb000;
+            --terminal-white: #ffffff;
+            --terminal-green: #00ff00;
+            --terminal-red: #ff0000;
+            --terminal-gray: #aaaaaa;
+        }
 
-        .ALL { background: #fff; border: 1px solid #ccc; color: #333; }
-        .BULL { background: #ffebee; color: #c62828; }
-        .BEAR { background: #e3f2fd; color: #1565c0; }
-        .FLAT { background: #eeeeee; color: #424242; }
+        body { 
+            font-family: 'Noto Sans KR', sans-serif; 
+            background-color: var(--terminal-bg); 
+            color: var(--terminal-text); 
+            margin: 0;
+            padding: 0;
+        }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #111; }
+        ::-webkit-scrollbar-thumb { background: #333; }
+        ::-webkit-scrollbar-thumb:hover { background: #555; }
 
-        table { width: 100%; border-collapse: collapse; background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-        th, td { border: 1px solid #e0e0e0; padding: 15px; text-align: left; }
-        th { background: #f8f9fa; font-weight: bold; }
-        tr:hover { background-color: #f5f5f5; }
-
-        .tag { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 0.85em; font-weight: bold; margin-bottom: 8px; }
-        a { color: #2980b9; text-decoration: none; font-size: 1.1em; }
-        a:hover { text-decoration: underline; }
-        .summary { font-size: 0.95em; color: #555; margin-top: 8px; line-height: 1.5; }
-        .meta-info { font-size: 0.85em; color: #888; }
+        .ticker-animate { transition: opacity 0.3s ease; }
+        .hover-panel { transition: all 0.2s ease-in-out; }
+        
+        select {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2300ffff'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 0.5rem center;
+            background-size: 1em;
+            padding-right: 2rem ! resentment;
+        }
     </style>
 </head>
-<body>
-    <h1>🏠 부동산 전망 시그널 리포트</h1>
+<body class="p-2 md:p-4 text-[13px] tracking-tight font-mono">
+    <div class="max-w-[1400px] mx-auto border border-[#333333] shadow-2xl bg-[#050505] relative overflow-hidden">
+        
+        <!-- Header / Control Bar -->
+        <div class="flex flex-col md:flex-row items-start md:items-center justify-between p-2 md:p-3 border-b border-[#333333] bg-[#111111]">
+            <div class="flex items-center gap-4 mb-3 md:mb-0">
+                <h1 class="font-bold text-base text-white flex items-center gap-2 tracking-widest uppercase">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#00ffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>
+                    R-ESTATE TERMINAL
+                </h1>
+                <div class="flex gap-2 text-xs" id="top-stats">
+                    <span class="text-[#00ffff]">TOT: 0</span>
+                    <span class="text-[#00ff00]">BUL: 0</span>
+                    <span class="text-[#ff0000]">BER: 0</span>
+                </div>
+            </div>
+            
+            <div class="flex flex-wrap items-center gap-2">
+                <!-- Dropdown Filters -->
+                <select id="regionFilter" class="border border-[#333333] bg-black text-xs px-3 py-1 font-bold text-[#00ffff] outline-none hover:bg-[#1a1a1a] cursor-pointer rounded-sm">
+                    <option value="ALL">REG: ALL</option>
+                </select>
+                <select id="keywordFilter" class="border border-[#333333] bg-black text-xs px-3 py-1 font-bold text-[#00ffff] outline-none hover:bg-[#1a1a1a] cursor-pointer rounded-sm">
+                    <option value="ALL">KEY: ALL</option>
+                </select>
 
-    <div class="filter-container">
-        <button class="filter-btn ALL" onclick="filterTable('ALL')">전체보기</button>
-        <button class="filter-btn BULL" onclick="filterTable('BULL')">🔴 BULL (상승)</button>
-        <button class="filter-btn BEAR" onclick="filterTable('BEAR')">🔵 BEAR (하락)</button>
-        <button class="filter-btn FLAT" onclick="filterTable('FLAT')">⚪ FLAT (보합)</button>
+                <!-- Signal Filter Buttons -->
+                <div class="flex border border-[#333333] bg-black text-xs" id="signalFilters">
+                    <button class="filter-btn px-3 py-1 font-bold border-r border-[#333333] bg-[#333333] text-white" data-val="ALL">ALL</button>
+                    <button class="filter-btn px-3 py-1 font-bold border-r border-[#333333] text-[#aaaaaa] hover:text-white hover:bg-[#1a1a1a]" data-val="BULL">BULL</button>
+                    <button class="filter-btn px-3 py-1 font-bold border-r border-[#333333] text-[#aaaaaa] hover:text-white hover:bg-[#1a1a1a]" data-val="BEAR">BEAR</button>
+                    <button class="filter-btn px-3 py-1 font-bold text-[#aaaaaa] hover:text-white hover:bg-[#1a1a1a]" data-val="FLAT">FLAT</button>
+                </div>
+
+                <!-- Compact Toggle -->
+                <button id="compactToggle" class="p-1 border border-[#333333] bg-black hover:bg-[#1a1a1a] text-[#aaaaaa] hover:text-white transition-colors" title="요약 모드 전환">
+                    <svg id="icon-minimize" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;"><polyline points="4 14 10 14 10 20"></polyline><polyline points="20 10 14 10 14 4"></polyline><line x1="14" y1="10" x2="21" y2="3"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>
+                    <svg id="icon-maximize" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- ANALYTICS PANEL -->
+        <div class="flex flex-col border-b border-[#333333] bg-[#0a0a0a]">
+            
+            <!-- 1. Monthly Trend (Accordion) -->
+            <div class="w-full border-b border-[#333333] p-3 md:px-4">
+                <div class="flex items-center justify-between cursor-pointer group" id="trendToggleBtn">
+                    <h2 class="text-[#00ffff] text-[11px] font-bold flex items-center gap-1 uppercase group-hover:text-white transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg> 
+                        Monthly Trend
+                    </h2>
+                    <div class="text-[10px] text-[#555555] tracking-wider group-hover:text-[#00ffff] transition-colors" id="trendToggleText">
+                        [+] EXPAND
+                    </div>
+                </div>
+                <div id="trendTableContainer" class="overflow-x-auto mt-3 border-t border-[#222] pt-3 hidden">
+                    <!-- JS renders vertical table here -->
+                </div>
+            </div>
+
+            <!-- 2. Hot Tags Ticker (Independent of Filter) -->
+            <div class="w-full p-3 md:px-4">
+                <h2 class="text-[#00ffff] text-[11px] font-bold mb-2 flex items-center gap-1 uppercase">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="22" y1="12" x2="18" y2="12"></line><line x1="6" y1="12" x2="2" y2="12"></line><line x1="12" y1="6" x2="12" y2="2"></line><line x1="12" y1="22" x2="12" y2="18"></line></svg>
+                    HOT TAGS [<span id="hotTagsMonth">--</span>] <span class="text-[#555] ml-2 animate-pulse">● LIVE</span>
+                </h2>
+                
+                <div class="relative w-full" id="tickerContainer">
+                    <div id="tickerView" class="bg-[#111111] border border-[#333333] p-2 h-[42px] flex items-center overflow-hidden cursor-crosshair ticker-animate">
+                        <!-- JS renders current ticker rank -->
+                    </div>
+
+                    <!-- Expandable Panel on Hover -->
+                    <div id="hoverView" class="absolute top-0 left-0 w-full bg-[#111111] p-4 z-50 hover-panel shadow-[0_15px_40px_rgba(0,0,0,0.9)] border border-[#00ffff] opacity-0 -translate-y-2 invisible">
+                        <!-- JS renders full TOP 5 list -->
+                    </div>
+                </div>
+                <div id="tickerHint" class="text-[10px] text-[#555555] mt-1 text-right tracking-wider">&gt;&gt; HOVER TO EXPAND FULL RANKING</div>
+            </div>
+        </div>
+
+        <!-- Data Grid -->
+        <div class="overflow-x-auto min-h-[500px]">
+            <table class="w-full text-left border-collapse whitespace-nowrap md:whitespace-normal relative z-0">
+                <thead>
+                    <tr class="bg-[#111111] border-b-2 border-[#444444] text-xs text-[#00ffff] tracking-wider uppercase">
+                        <th class="p-2 w-24">Time</th>
+                        <th class="p-2 w-20 text-center">Sig</th>
+                        <th class="p-2 w-28 text-center">Region</th>
+                        <th class="p-2 w-28 text-center">Keyword</th>
+                        <th class="p-2">Headline / AI Summary</th>
+                        <th class="p-2 w-32">Source</th>
+                    </tr>
+                </thead>
+                <tbody class="text-[13px]" id="newsTableBody">
+                    <tr><td colspan="6" class="p-10 text-center text-[#ffb000] animate-pulse font-bold tracking-widest uppercase">BOOTING TERMINAL... LOADING DATA</td></tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Status Bar -->
+        <div class="p-2 bg-[#111111] border-t border-[#333333] text-[10px] text-[#555555] flex justify-between uppercase tracking-widest">
+            <span>SYS_STATUS: CONNECTED (G_ACTIONS)</span>
+            <span id="updateTime">UPDATE_TIME: --</span>
+            <span>R-ESTATE TERMINAL v3.1 // SECURE_ACCESS</span>
+        </div>
+
     </div>
 
-    <table id="newsTable">
-        <thead>
-            <tr>
-                <th width="15%">날짜</th>
-                <th width="15%">출처 / 기자</th>
-                <th width="70%">AI 시그널 및 요약</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr><td colspan="3">데이터를 불러오는 중입니다...</td></tr>
-        </tbody>
-    </table>
-
     <script>
+        // --- 1. State Management ---
         let allData = [];
+        let monthlyStats = [];
+        let topTags = { regions: [], keywords: [], currentMonth: '' };
+        
+        let filterSignal = 'ALL';
+        let filterRegion = 'ALL';
+        let filterKeyword = 'ALL';
+        let isCompact = false;
+        let isTrendExpanded = false;
+        
+        let tickerIndex = 0;
+        let isTickerHovered = false;
+        let tickerInterval;
 
+        const sigColors = {
+            BULL: "text-[#00ff00] bg-[#002200] border-[#00ff00]",
+            BEAR: "text-[#ff0000] bg-[#220000] border-[#ff0000]",
+            FLAT: "text-[#aaaaaa] bg-[#222222] border-[#555555]"
+        };
+
+        // --- 2. Data Parsing Helpers ---
         function parseMeta(summary, field) {
             if (!summary) return 'Unknown';
             const regex = new RegExp(field + ':\\s*([^\\n]+)', 'i');
@@ -63,77 +192,293 @@
         }
 
         function cleanSummary(summary) {
-            if (!summary) return '요약 없음';
-            return summary
-                .replace(/(Region|Keyword|Signal):.*(\n|$)/gi, '')
-                .trim();
+            if (!summary) return '요약 데이터가 없습니다.';
+            return summary.replace(/(Region|Keyword|Signal):.*(\n|$)/gi, '').trim();
         }
 
-        // 💡 깃허브 절대 경로(RAW_URL)를 사용하도록 수정됨!
-        const RAW_URL = "https://raw.githubusercontent.com/lmu1/budongsanSZ2/main/news_data_latest.csv";
+        // --- 3. CSV Ingestion ---
+        const CSV_URL = "https://raw.githubusercontent.com/lmu1/budongsanSZ2/main/news_data_latest.csv";
+        
+        function initTerminal() {
+            Papa.parse(`${CSV_URL}?nocache=${Date.now()}`, {
+                download: true,
+                header: true,
+                complete: function(results) {
+                    allData = results.data
+                        .filter(row => row.title && row.collected_at)
+                        .map(row => ({
+                            ...row,
+                            region: parseMeta(row.summary, 'Region'),
+                            keyword: parseMeta(row.summary, 'Keyword')
+                        }));
 
-        Papa.parse(`${RAW_URL}?nocache=${Date.now()}`, {
-            download: true,
-            header: true,
-            complete: function(results) {
-                allData = results.data
-                    .filter(row => row.title)
-                    .map(row => ({
-                        ...row,
-                        region: parseMeta(row.summary, 'Region'),
-                        keyword: parseMeta(row.summary, 'Keyword')
-                    }));
+                    // Sort by time descending
+                    allData.sort((a, b) => new Date(b.collected_at) - new Date(a.collected_at));
+                    
+                    if (allData.length > 0) {
+                        document.getElementById('updateTime').innerText = `UPDATE_TIME: ${allData[0].collected_at}`;
+                    }
 
-                allData.sort((a, b) => new Date(b.collected_at) - new Date(a.collected_at));
-                renderTable(allData);
-            },
-            error: function(err) {
-                console.error("CSV 로드 에러:", err);
-                document.querySelector("#newsTable tbody").innerHTML = "<tr><td colspan='3'>데이터를 불러오지 못했습니다. Github에 데이터 파일이 존재하는지 확인해주세요.</td></tr>";
-            }
-        });
-
-        function renderTable(data) {
-            const tbody = document.querySelector("#newsTable tbody");
-            tbody.innerHTML = "";
-
-            if (!data.length) {
-                tbody.innerHTML = "<tr><td colspan='3'>표시할 데이터가 없습니다.</td></tr>";
-                return;
-            }
-
-            data.forEach(row => {
-                const tr = document.createElement("tr");
-                tr.className = row.signal || 'FLAT';
-
-                const dateOnly = row.collected_at ? String(row.collected_at).slice(0, 16) : '알수없음';
-
-                tr.innerHTML = `
-                    <td><b>${dateOnly}</b></td>
-                    <td>
-                        <div class="meta-info"><b>${row.publisher || 'Unknown'}</b></div>
-                        <div class="meta-info">${row.reporter || 'Unknown'}</div>
-                    </td>
-                    <td>
-                        <span class="tag ${row.signal || 'FLAT'}">${row.signal || 'FLAT'}</span>
-                        <span class="tag FLAT">${row.region || 'Unknown'}</span>
-                        <span class="tag FLAT">${row.keyword || 'Unknown'}</span><br>
-                        <a href="${row.link}" target="_blank"><b>${row.title}</b></a>
-                        <div class="summary">${cleanSummary(row.summary).replace(/\n/g, '<br>')}</div>
-                    </td>
-                `;
-                tbody.appendChild(tr);
+                    calculateAnalytics();
+                    populateDropdowns();
+                    applyFilters();
+                    startTicker();
+                },
+                error: function() {
+                    document.getElementById('newsTableBody').innerHTML = `<tr><td colspan="6" class="p-10 text-center text-[#ff0000] font-bold uppercase tracking-widest">ERROR: CRITICAL_DATA_FAILURE</td></tr>`;
+                }
             });
         }
 
-        function filterTable(signal) {
-            if (signal === 'ALL') {
-                renderTable(allData);
-            } else {
-                const filtered = allData.filter(row => row.signal === signal);
-                renderTable(filtered);
+        // --- 4. Analytics Logic (Filter-Independent) ---
+        function calculateAnalytics() {
+            // Global Stats
+            const total = allData.length;
+            const bull = allData.filter(d => d.signal === 'BULL').length;
+            const bear = allData.filter(d => d.signal === 'BEAR').length;
+            document.getElementById('top-stats').innerHTML = `
+                <span class="text-[#00ffff]">TOT: ${total}</span>
+                <span class="text-[#00ff00]">BUL: ${bull}</span>
+                <span class="text-[#ff0000]">BER: ${bear}</span>
+            `;
+
+            // Monthly Trend (Vertical Layout)
+            const grouped = {};
+            allData.forEach(d => {
+                const month = d.collected_at.substring(0, 7);
+                if (!grouped[month]) grouped[month] = { month, BULL: 0, BEAR: 0, FLAT: 0, TOTAL: 0 };
+                const sig = d.signal || 'FLAT';
+                if(grouped[month][sig] !== undefined) grouped[month][sig]++;
+                grouped[month].TOTAL++;
+            });
+            monthlyStats = Object.values(grouped).sort((a, b) => b.month.localeCompare(a.month));
+            renderMonthlyTrend();
+
+            // Hot Tags (Latest Month)
+            if(monthlyStats.length > 0) {
+                const monthStr = monthlyStats[0].month;
+                topTags.currentMonth = monthStr;
+                document.getElementById('hotTagsMonth').innerText = monthStr;
+                
+                const currentMonthData = allData.filter(d => d.collected_at.startsWith(monthStr));
+                const regCount = {};
+                const keyCount = {};
+                
+                currentMonthData.forEach(d => {
+                    if(d.region && d.region !== 'Unknown') regCount[d.region] = (regCount[d.region] || 0) + 1;
+                    if(d.keyword && d.keyword !== 'Unknown') keyCount[d.keyword] = (keyCount[d.keyword] || 0) + 1;
+                });
+
+                const sort5 = (obj) => Object.entries(obj).sort((a, b) => b[1] - a[1]).slice(0, 5);
+                topTags.regions = sort5(regCount);
+                topTags.keywords = sort5(keyCount);
+                
+                renderTickerViews();
             }
         }
+
+        // --- 5. UI Rendering ---
+        function renderMonthlyTrend() {
+            const container = document.getElementById('trendTableContainer');
+            if(monthlyStats.length === 0) return;
+
+            let header = `<th class="pb-2 text-left w-24 text-[#555555] font-normal text-[10px]">METRIC</th>`;
+            let bullRow = `<td class="py-2 text-left text-[#00ff00] font-bold text-xs tracking-widest">BULL</td>`;
+            let bearRow = `<td class="py-2 text-left text-[#ff0000] font-bold text-xs tracking-widest">BEAR</td>`;
+            let flatRow = `<td class="py-2 text-left text-[#aaaaaa] font-bold text-xs tracking-widest">FLAT</td>`;
+            let totalRow = `<td class="py-2 text-left text-white font-bold text-xs tracking-widest">TOTAL</td>`;
+
+            monthlyStats.forEach(s => {
+                const [y, m] = s.month.split('-');
+                header += `<th class="pb-2 w-20"><div class="text-[10px] text-[#555555] font-normal tracking-widest">${y}</div><div class="text-[#00ffff] font-bold">${parseInt(m)}월</div></th>`;
+                bullRow += `<td class="py-2 text-[#00ff00] font-bold">${s.BULL}</td>`;
+                bearRow += `<td class="py-2 text-[#ff0000] font-bold">${s.BEAR}</td>`;
+                flatRow += `<td class="py-2 text-[#aaaaaa] font-bold">${s.FLAT}</td>`;
+                totalRow += `<td class="py-2 text-white font-bold">${s.TOTAL}</td>`;
+            });
+
+            container.innerHTML = `
+                <table class="w-full md:w-auto text-[13px] text-center border-collapse">
+                    <thead><tr class="border-b border-[#333333]">${header}</tr></thead>
+                    <tbody>
+                        <tr class="border-b border-[#222222] hover:bg-[#111111]">${bullRow}</tr>
+                        <tr class="border-b border-[#222222] hover:bg-[#111111]">${bearRow}</tr>
+                        <tr class="border-b border-[#222222] hover:bg-[#111111]">${flatRow}</tr>
+                        <tr class="hover:bg-[#111111]">${totalRow}</tr>
+                    </tbody>
+                </table>
+            `;
+        }
+
+        function renderTickerViews() {
+            // Full Expand Panel
+            const hoverEl = document.getElementById('hoverView');
+            let regHtml = topTags.regions.map((r, i) => `
+                <div class="flex justify-between text-[13px] py-1.5 hover:bg-[#222]">
+                    <span class="text-white"><span class="text-[#555] mr-2">${i+1}.</span>${r[0]}</span>
+                    <span class="text-[#aaaaaa] font-bold">${r[1]}</span>
+                </div>`).join('');
+            let keyHtml = topTags.keywords.map((k, i) => `
+                <div class="flex justify-between text-[13px] py-1.5 hover:bg-[#222]">
+                    <span class="text-white"><span class="text-[#555] mr-2">${i+1}.</span>${k[0]}</span>
+                    <span class="text-[#ffb000] font-bold">${k[1]}</span>
+                </div>`).join('');
+
+            hoverEl.innerHTML = `
+                <div class="flex flex-col md:flex-row gap-8">
+                    <div class="w-full md:w-1/2">
+                        <div class="text-[#00ffff] text-[11px] font-bold mb-3 border-b border-[#333] pb-1 uppercase">TOP REGIONS</div>
+                        ${regHtml}
+                    </div>
+                    <div class="w-full md:w-1/2">
+                        <div class="text-[#ffb000] text-[11px] font-bold mb-3 border-b border-[#333] pb-1 uppercase">TOP KEYWORDS</div>
+                        ${keyHtml}
+                    </div>
+                </div>
+            `;
+            updateTickerFrame();
+        }
+
+        function updateTickerFrame() {
+            if(topTags.regions.length === 0) return;
+            const reg = topTags.regions[tickerIndex];
+            const kw = topTags.keywords[tickerIndex];
+
+            document.getElementById('tickerView').innerHTML = `
+                <div class="flex items-center gap-4 absolute w-full ${isTickerHovered ? 'opacity-0' : 'opacity-100'} transition-opacity duration-300">
+                    ${reg ? `<div class="flex items-center gap-2 whitespace-nowrap"><span class="bg-[#333333] text-white px-2 py-0.5 text-[10px] rounded-sm">REG RANK ${tickerIndex + 1}</span><span class="text-[#00ffff] font-bold text-sm">${reg[0]}</span><span class="text-[#aaaaaa] text-[11px]">(${reg[1]})</span></div>` : ''}
+                    <span class="text-[#555555] mx-4">|</span>
+                    ${kw ? `<div class="flex items-center gap-2 whitespace-nowrap"><span class="bg-[#333333] text-white px-2 py-0.5 text-[10px] rounded-sm">KEY RANK ${tickerIndex + 1}</span><span class="text-[#ffb000] font-bold text-sm">${kw[0]}</span><span class="text-[#aaaaaa] text-[11px]">(${kw[1]})</span></div>` : ''}
+                </div>
+            `;
+        }
+
+        function startTicker() {
+            clearInterval(tickerInterval);
+            tickerInterval = setInterval(() => {
+                if (!isTickerHovered) {
+                    tickerIndex = (tickerIndex + 1) % Math.max(topTags.regions.length, 1);
+                    updateTickerFrame();
+                }
+            }, 2500);
+        }
+
+        function populateDropdowns() {
+            const regs = [...new Set(allData.map(d => d.region).filter(r => r && r !== 'Unknown'))].sort();
+            const keys = [...new Set(allData.map(d => d.keyword).filter(k => k && k !== 'Unknown'))].sort();
+
+            const rs = document.getElementById('regionFilter');
+            regs.forEach(r => rs.innerHTML += `<option value="${r}">REG: ${r}</option>`);
+
+            const ks = document.getElementById('keywordFilter');
+            keys.forEach(k => ks.innerHTML += `<option value="${k}">KEY: ${k}</option>`);
+        }
+
+        function applyFilters() {
+            const data = allData.filter(d => {
+                const sMatch = filterSignal === 'ALL' || d.signal === filterSignal;
+                const rMatch = filterRegion === 'ALL' || d.region === filterRegion;
+                const kMatch = filterKeyword === 'ALL' || d.keyword === filterKeyword;
+                return sMatch && rMatch && kMatch;
+            });
+            renderTable(data);
+        }
+
+        function renderTable(data) {
+            const body = document.getElementById('newsTableBody');
+            if(data.length === 0) {
+                body.innerHTML = `<tr><td colspan="6" class="p-10 text-center text-[#ff0000] uppercase font-bold tracking-widest">DATA_NOT_FOUND_FOR_CRITERIA</td></tr>`;
+                return;
+            }
+
+            let html = '';
+            data.forEach(item => {
+                const ts = item.collected_at ? item.collected_at.split(' ') : ['--', '--'];
+                const sigClass = sigColors[item.signal] || sigColors['FLAT'];
+                const sum = cleanSummary(item.summary);
+
+                html += `
+                    <tr class="border-b border-[#222222] hover:bg-[#111111] group transition-colors">
+                        <td class="p-2 text-[#00ffff] font-mono">${ts[1]}<br/><span class="text-[10px] text-[#555]">${ts[0]}</span></td>
+                        <td class="p-2 text-center"><span class="inline-block w-full text-center px-1 py-0.5 border font-bold text-[11px] tracking-wider ${sigClass}">${item.signal || 'FLAT'}</span></td>
+                        <td class="p-2 text-center font-bold text-[#ffb000]">${item.region}</td>
+                        <td class="p-2 text-center text-[#ffb000]">[${item.keyword}]</td>
+                        <td class="p-2 py-3">
+                            <a href="${item.link}" target="_blank" class="font-sans font-bold text-white hover:text-[#00ffff] hover:underline leading-snug">
+                                ${item.title}
+                            </a>
+                        </td>
+                        <td class="p-2 text-[#aaaaaa]"><span class="text-[#ffb000] font-bold">${item.publisher || 'Unknown'}</span><br/><span class="text-[10px] opacity-70">(${item.reporter || 'Unknown'})</span></td>
+                    </tr>
+                `;
+                
+                if(!isCompact) {
+                    html += `
+                    <tr class="border-b border-[#333333] bg-[#0a0a0a]">
+                        <td colspan="4"></td>
+                        <td colspan="2" class="p-2 pt-1 pb-4 text-[#cccccc] font-sans leading-relaxed text-[13px]">
+                            <div class="flex gap-2 items-start opacity-90">
+                                <span class="text-[#555555] select-none font-mono">&gt;&gt;</span>
+                                <span class="line-clamp-2 md:line-clamp-none">${sum}</span>
+                            </div>
+                        </td>
+                    </tr>`;
+                }
+            });
+            body.innerHTML = html;
+        }
+
+        // --- 6. Event Listeners ---
+        document.getElementById('regionFilter').addEventListener('change', e => { filterRegion = e.target.value; applyFilters(); });
+        document.getElementById('keywordFilter').addEventListener('change', e => { filterKeyword = e.target.value; applyFilters(); });
+        
+        document.querySelectorAll('#signalFilters .filter-btn').forEach(btn => {
+            btn.addEventListener('click', e => {
+                document.querySelectorAll('#signalFilters .filter-btn').forEach(b => {
+                    b.classList.remove('bg-[#333333]', 'text-white');
+                    b.classList.add('text-[#aaaaaa]');
+                });
+                e.target.classList.add('bg-[#333333]', 'text-white');
+                e.target.classList.remove('text-[#aaaaaa]');
+                filterSignal = e.target.getAttribute('data-val');
+                applyFilters();
+            });
+        });
+
+        document.getElementById('compactToggle').addEventListener('click', () => {
+            isCompact = !isCompact;
+            document.getElementById('icon-minimize').style.display = isCompact ? 'none' : 'block';
+            document.getElementById('icon-maximize').style.display = isCompact ? 'block' : 'none';
+            applyFilters();
+        });
+
+        document.getElementById('trendToggleBtn').addEventListener('click', () => {
+            isTrendExpanded = !isTrendExpanded;
+            const container = document.getElementById('trendTableContainer');
+            const text = document.getElementById('trendToggleText');
+            container.classList.toggle('hidden');
+            text.innerText = isTrendExpanded ? '[-] COLLAPSE' : '[+] EXPAND';
+        });
+
+        const tickerContainer = document.getElementById('tickerContainer');
+        tickerContainer.addEventListener('mouseenter', () => {
+            isTickerHovered = true;
+            updateTickerFrame();
+            const hv = document.getElementById('hoverView');
+            hv.classList.remove('opacity-0', '-translate-y-2', 'invisible');
+            hv.classList.add('opacity-100', 'translate-y-0', 'visible');
+        });
+
+        tickerContainer.addEventListener('mouseleave', () => {
+            isTickerHovered = false;
+            updateTickerFrame();
+            const hv = document.getElementById('hoverView');
+            hv.classList.add('opacity-0', '-translate-y-2', 'invisible');
+            hv.classList.remove('opacity-100', 'translate-y-0', 'visible');
+        });
+
+        // --- Start Terminal ---
+        window.onload = initTerminal;
     </script>
 </body>
 </html>
