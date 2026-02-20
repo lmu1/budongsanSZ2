@@ -125,3 +125,253 @@
 "김동연 지사, ‘부동산 범죄와 전면전’ 선포… “투기 카르텔 뿌리 뽑...","처리될 전망이다. 도민 참여를 이끌어내기 위한 파격적인 보상책도 마련됐다. 도는 카카오톡 전용 채널과 직통 전화를 포함한 ‘부동산 부패 제보 핫라인’을 개설하고, 결정적 증거를 제공한 공익 신고자에게는 최대 5억...",https://sports.donga.com/region/article/all/20260220/133387827/1,2026-02-20T13:12:00+09:00,스포츠동아,Unknown,,"요약 생성 실패: 404 models/gemini-pro is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
 
 [스포츠동아 | Unknown | 전국 | 부동산 | FLAT]",전국,부동산,FLAT,[스포츠동아 | Unknown | 전국 | 부동산 | FLAT],2026-02-20T04:22:25.756939
+"강남 중심 입지 갖춘 '르피에드 in 강남', 실수요·투자수요 동시 공략","최근 서울 부동산 시장이 점진적인 회복 흐름을 보이면서, 다시 한 번 '입지 경쟁력'을 갖춘 단지들이... 이러한 흐름 속에서 르피에드 in 강남은 향후 강남 주거시장 내 핵심 단지로 자리매김할 가능성이 높다는 전망이다.",https://www.woodkorea.co.kr/news/articleView.html?idxno=88382,2026-02-20T13:36:00+09:00,이지민 기자,Unknown,,"요약 생성 실패: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. 
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 0, model: gemini-2.0-flash
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 0, model: gemini-2.0-flash
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_input_token_count, limit: 0, model: gemini-2.0-flash
+Please retry in 38.339012231s. [links {
+  description: ""Learn more about Gemini API quotas""
+  url: ""https://ai.google.dev/gemini-api/docs/rate-limits""
+}
+, violations {
+  quota_metric: ""generativelanguage.googleapis.com/generate_content_free_tier_requests""
+  quota_id: ""GenerateRequestsPerDayPerProjectPerModel-FreeTier""
+  quota_dimensions {
+    key: ""model""
+    value: ""gemini-2.0-flash""
+  }
+  quota_dimensions {
+    key: ""location""
+    value: ""global""
+  }
+}
+violations {
+  quota_metric: ""generativelanguage.googleapis.com/generate_content_free_tier_requests""
+  quota_id: ""GenerateRequestsPerMinutePerProjectPerModel-FreeTier""
+  quota_dimensions {
+    key: ""model""
+    value: ""gemini-2.0-flash""
+  }
+  quota_dimensions {
+    key: ""location""
+    value: ""global""
+  }
+}
+violations {
+  quota_metric: ""generativelanguage.googleapis.com/generate_content_free_tier_input_token_count""
+  quota_id: ""GenerateContentInputTokensPerModelPerMinute-FreeTier""
+  quota_dimensions {
+    key: ""model""
+    value: ""gemini-2.0-flash""
+  }
+  quota_dimensions {
+    key: ""location""
+    value: ""global""
+  }
+}
+, retry_delay {
+  seconds: 38
+}
+]
+
+[이지민 기자 | Unknown | 전국 | 부동산 | FLAT]",전국,부동산,FLAT,[이지민 기자 | Unknown | 전국 | 부동산 | FLAT],2026-02-20T04:38:21.669325
+[2월 넷째주 분양] 봄 성수기 준비 돌입… 전국 5곳 모델하우스 오픈,"20일 부동산 전문 리서치업체 리얼투데이에 따르면 2월 넷째 주에는 전국 5곳에서 총 634가구(공가세대... GTX·SRT 동탄역을 도보로 이용할 수 있으며, 2028년 GTX-A 삼성역 연장 시 강남 접근성이 개선될 전망이다. 27일...",https://www.viva100.com/article/20260220500456,2026-02-20T13:32:00+09:00,브릿지경제,Unknown,,"요약 생성 실패: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. 
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 0, model: gemini-2.0-flash
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 0, model: gemini-2.0-flash
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_input_token_count, limit: 0, model: gemini-2.0-flash
+Please retry in 33.269400529s. [links {
+  description: ""Learn more about Gemini API quotas""
+  url: ""https://ai.google.dev/gemini-api/docs/rate-limits""
+}
+, violations {
+  quota_metric: ""generativelanguage.googleapis.com/generate_content_free_tier_requests""
+  quota_id: ""GenerateRequestsPerDayPerProjectPerModel-FreeTier""
+  quota_dimensions {
+    key: ""model""
+    value: ""gemini-2.0-flash""
+  }
+  quota_dimensions {
+    key: ""location""
+    value: ""global""
+  }
+}
+violations {
+  quota_metric: ""generativelanguage.googleapis.com/generate_content_free_tier_requests""
+  quota_id: ""GenerateRequestsPerMinutePerProjectPerModel-FreeTier""
+  quota_dimensions {
+    key: ""model""
+    value: ""gemini-2.0-flash""
+  }
+  quota_dimensions {
+    key: ""location""
+    value: ""global""
+  }
+}
+violations {
+  quota_metric: ""generativelanguage.googleapis.com/generate_content_free_tier_input_token_count""
+  quota_id: ""GenerateContentInputTokensPerModelPerMinute-FreeTier""
+  quota_dimensions {
+    key: ""model""
+    value: ""gemini-2.0-flash""
+  }
+  quota_dimensions {
+    key: ""location""
+    value: ""global""
+  }
+}
+, retry_delay {
+  seconds: 33
+}
+]
+
+[브릿지경제 | Unknown | 전국 | 부동산 | FLAT]",전국,부동산,FLAT,[브릿지경제 | Unknown | 전국 | 부동산 | FLAT],2026-02-20T04:38:26.738692
+부산 단 6곳뿐인 ‘직통역세권’ 선점 기회… 서부산 첫 수혜지 ‘엄궁...,초역세권을 넘어 직통역세권으로… 진화하는 역세권 가치 부동산 시장에서 ‘역세권’의 개념이 진화하고... 것으로 전망했다. 그뿐 아니라 단지는 입지 조건 또한 우수하다. 먼저 실수요자들이 선호하는 평지 입지에...,https://www.dt.co.kr/article/12047501?ref=naver,2026-02-20T13:32:00+09:00,디지털타임스,Unknown,,"요약 생성 실패: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. 
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_input_token_count, limit: 0, model: gemini-2.0-flash
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 0, model: gemini-2.0-flash
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 0, model: gemini-2.0-flash
+Please retry in 28.206184598s. [links {
+  description: ""Learn more about Gemini API quotas""
+  url: ""https://ai.google.dev/gemini-api/docs/rate-limits""
+}
+, violations {
+  quota_metric: ""generativelanguage.googleapis.com/generate_content_free_tier_input_token_count""
+  quota_id: ""GenerateContentInputTokensPerModelPerMinute-FreeTier""
+  quota_dimensions {
+    key: ""model""
+    value: ""gemini-2.0-flash""
+  }
+  quota_dimensions {
+    key: ""location""
+    value: ""global""
+  }
+}
+violations {
+  quota_metric: ""generativelanguage.googleapis.com/generate_content_free_tier_requests""
+  quota_id: ""GenerateRequestsPerMinutePerProjectPerModel-FreeTier""
+  quota_dimensions {
+    key: ""model""
+    value: ""gemini-2.0-flash""
+  }
+  quota_dimensions {
+    key: ""location""
+    value: ""global""
+  }
+}
+violations {
+  quota_metric: ""generativelanguage.googleapis.com/generate_content_free_tier_requests""
+  quota_id: ""GenerateRequestsPerDayPerProjectPerModel-FreeTier""
+  quota_dimensions {
+    key: ""model""
+    value: ""gemini-2.0-flash""
+  }
+  quota_dimensions {
+    key: ""location""
+    value: ""global""
+  }
+}
+, retry_delay {
+  seconds: 28
+}
+]
+
+[디지털타임스 | Unknown | 전국 | 부동산 | FLAT]",전국,부동산,FLAT,[디지털타임스 | Unknown | 전국 | 부동산 | FLAT],2026-02-20T04:38:31.801879
+"두산건설, 올해도 이어가는 '완판' 행진","아무리 부동산 경기가 바닥을 기는 지방이라지만 그 중에서도 분양이 잘 되는 지역이 있다. 구미, 창원, 청주... 올해 분양이 잘 된다면 두자릿수 영업이익률을 기대해 볼만하다는 게 업계 전망이다. 두산건설 관계자는...",https://www.mediapen.com/news/view/1082549,2026-02-20T13:30:00+09:00,@mediapen,Unknown,,"요약 생성 실패: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. 
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 0, model: gemini-2.0-flash
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 0, model: gemini-2.0-flash
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_input_token_count, limit: 0, model: gemini-2.0-flash
+Please retry in 23.146767799s. [links {
+  description: ""Learn more about Gemini API quotas""
+  url: ""https://ai.google.dev/gemini-api/docs/rate-limits""
+}
+, violations {
+  quota_metric: ""generativelanguage.googleapis.com/generate_content_free_tier_requests""
+  quota_id: ""GenerateRequestsPerDayPerProjectPerModel-FreeTier""
+  quota_dimensions {
+    key: ""model""
+    value: ""gemini-2.0-flash""
+  }
+  quota_dimensions {
+    key: ""location""
+    value: ""global""
+  }
+}
+violations {
+  quota_metric: ""generativelanguage.googleapis.com/generate_content_free_tier_requests""
+  quota_id: ""GenerateRequestsPerMinutePerProjectPerModel-FreeTier""
+  quota_dimensions {
+    key: ""model""
+    value: ""gemini-2.0-flash""
+  }
+  quota_dimensions {
+    key: ""location""
+    value: ""global""
+  }
+}
+violations {
+  quota_metric: ""generativelanguage.googleapis.com/generate_content_free_tier_input_token_count""
+  quota_id: ""GenerateContentInputTokensPerModelPerMinute-FreeTier""
+  quota_dimensions {
+    key: ""model""
+    value: ""gemini-2.0-flash""
+  }
+  quota_dimensions {
+    key: ""location""
+    value: ""global""
+  }
+}
+, retry_delay {
+  seconds: 23
+}
+]
+
+[@mediapen | Unknown | 전국 | 부동산 | FLAT]",전국,부동산,FLAT,[@mediapen | Unknown | 전국 | 부동산 | FLAT],2026-02-20T04:38:36.860861
+빚내서 샀는데 대출 규제 날벼락? ‘실버 임대인’ 어쩌나,"특히 이들이 선택한 업종이 부동산 임대업에 집중되면서, 전체 임대사업자의 절반 이상이 60대 이상인... 집중될 전망이다. 월세 수입에 의존하는 고령 임대인 일부는 단기간 상환 부담에 직면할 수 있다는 우려도...",https://www.mk.co.kr/article/11967181,2026-02-20T13:22:00+09:00,빚내서 샀는데 대출 규제 날벼락? ‘실버 임대인’ 어쩌나- 매경ECONOMY,Unknown,,"요약 생성 실패: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. 
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_input_token_count, limit: 0, model: gemini-2.0-flash
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 0, model: gemini-2.0-flash
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 0, model: gemini-2.0-flash
+Please retry in 18.080888449s. [links {
+  description: ""Learn more about Gemini API quotas""
+  url: ""https://ai.google.dev/gemini-api/docs/rate-limits""
+}
+, violations {
+  quota_metric: ""generativelanguage.googleapis.com/generate_content_free_tier_input_token_count""
+  quota_id: ""GenerateContentInputTokensPerModelPerMinute-FreeTier""
+  quota_dimensions {
+    key: ""model""
+    value: ""gemini-2.0-flash""
+  }
+  quota_dimensions {
+    key: ""location""
+    value: ""global""
+  }
+}
+violations {
+  quota_metric: ""generativelanguage.googleapis.com/generate_content_free_tier_requests""
+  quota_id: ""GenerateRequestsPerMinutePerProjectPerModel-FreeTier""
+  quota_dimensions {
+    key: ""model""
+    value: ""gemini-2.0-flash""
+  }
+  quota_dimensions {
+    key: ""location""
+    value: ""global""
+  }
+}
+violations {
+  quota_metric: ""generativelanguage.googleapis.com/generate_content_free_tier_requests""
+  quota_id: ""GenerateRequestsPerDayPerProjectPerModel-FreeTier""
+  quota_dimensions {
+    key: ""model""
+    value: ""gemini-2.0-flash""
+  }
+  quota_dimensions {
+    key: ""location""
+    value: ""global""
+  }
+}
+, retry_delay {
+  seconds: 18
+}
+]
+
+[빚내서 샀는데 대출 규제 날벼락? ‘실버 임대인’ 어쩌나- 매경ECONOMY | Unknown | 전국 | 부동산 | FLAT]",전국,부동산,FLAT,[빚내서 샀는데 대출 규제 날벼락? ‘실버 임대인’ 어쩌나- 매경ECONOMY | Unknown | 전국 | 부동산 | FLAT],2026-02-20T04:38:41.926617
