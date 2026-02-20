@@ -33,6 +33,8 @@ def extract_article_metadata(link: str) -> dict:
     try:
         resp = requests.get(link, timeout=10, headers={"User-Agent": "Mozilla/5.0"})
         soup = BeautifulSoup(resp.text, "html.parser")
+        
+        # 1. 본문 추출
         content_node = (
             soup.select_one("article#dic_area")
             or soup.select_one("#newsct_article")
@@ -40,9 +42,21 @@ def extract_article_metadata(link: str) -> dict:
         )
         if content_node:
             metadata["content"] = content_node.get_text(" ", strip=True)[:2500]
+            
+        # 2. 언론사 추출
         pub_meta = soup.select_one("meta[property='og:site_name']")
         if pub_meta:
             metadata["publisher"] = pub_meta.get("content", "Unknown").strip()
+            
+        # 💡 3. 기자 이름 추출 (새로 추가된 로직)
+        reporter_node = (
+            soup.select_one(".media_end_head_journalist_name") 
+            or soup.select_one(".byline_s") 
+            or soup.select_one(".b_text")
+        )
+        if reporter_node:
+            metadata["reporter"] = reporter_node.get_text(strip=True)
+            
     except Exception:
         pass
     return metadata
