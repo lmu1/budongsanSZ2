@@ -13,7 +13,7 @@ from bs4 import BeautifulSoup
 
 # --- 설정부 ---
 QUERY = "부동산 전망"
-TARGET_COUNT = 30 # 30건을 다 채우려면 약 7~8분이 소요됩니다.
+TARGET_COUNT = 5 # 30건을 다 채우려면 약 7~8분이 소요됩니다.
 CSV_PATH = "news_data.csv"
 
 def get_env(name: str) -> str:
