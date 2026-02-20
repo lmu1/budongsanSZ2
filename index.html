@@ -69,8 +69,10 @@
                 .trim();
         }
 
-        // 최신 누적본을 캐시 우회로 즉시 로드
-        Papa.parse(`news_data_latest.csv?nocache=${Date.now()}`, {
+        // 💡 깃허브 절대 경로(RAW_URL)를 사용하도록 수정됨!
+        const RAW_URL = "https://raw.githubusercontent.com/lmu1/budongsanSZ2/main/news_data_latest.csv";
+
+        Papa.parse(`${RAW_URL}?nocache=${Date.now()}`, {
             download: true,
             header: true,
             complete: function(results) {
@@ -85,8 +87,9 @@
                 allData.sort((a, b) => new Date(b.collected_at) - new Date(a.collected_at));
                 renderTable(allData);
             },
-            error: function() {
-                document.querySelector("#newsTable tbody").innerHTML = "<tr><td colspan='3'>아직 수집된 데이터(news_data_latest.csv)가 없거나 오류가 발생했습니다.</td></tr>";
+            error: function(err) {
+                console.error("CSV 로드 에러:", err);
+                document.querySelector("#newsTable tbody").innerHTML = "<tr><td colspan='3'>데이터를 불러오지 못했습니다. Github에 데이터 파일이 존재하는지 확인해주세요.</td></tr>";
             }
         });
 
