@@ -47,8 +47,12 @@
             background-repeat: no-repeat;
             background-position: right 0.5rem center;
             background-size: 1em;
-            padding-right: 2rem ! resentment;
+            padding-right: 2.5rem !important;
         }
+
+        /* 버튼 호버 효과 가독성 개선 */
+        .filter-btn:hover { background-color: #1a1a1a; color: #ffffff; }
+        .reset-btn:hover { background-color: #ff0000; color: #ffffff; border-color: #ff0000; }
     </style>
 </head>
 <body class="p-2 md:p-4 text-[13px] tracking-tight font-mono">
@@ -69,25 +73,31 @@
             </div>
             
             <div class="flex flex-wrap items-center gap-2">
+                <!-- Reset Button -->
+                <button id="resetAllFilters" class="reset-btn border border-[#ff0000] text-[#ff0000] text-[11px] px-3 py-1 font-bold transition-all bg-transparent rounded-sm flex items-center gap-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
+                    [!] RESET
+                </button>
+
                 <!-- Dropdown Filters -->
-                <select id="regionFilter" class="border border-[#333333] bg-black text-xs px-3 py-1 font-bold text-[#00ffff] outline-none hover:bg-[#1a1a1a] cursor-pointer rounded-sm">
+                <select id="regionFilter" class="border border-[#333333] bg-black text-xs px-3 py-1 font-bold text-[#00ffff] outline-none hover:bg-[#1a1a1a] cursor-pointer rounded-sm min-w-[120px]">
                     <option value="ALL">REG: ALL</option>
                 </select>
-                <select id="keywordFilter" class="border border-[#333333] bg-black text-xs px-3 py-1 font-bold text-[#00ffff] outline-none hover:bg-[#1a1a1a] cursor-pointer rounded-sm">
+                <select id="keywordFilter" class="border border-[#333333] bg-black text-xs px-3 py-1 font-bold text-[#00ffff] outline-none hover:bg-[#1a1a1a] cursor-pointer rounded-sm min-w-[120px]">
                     <option value="ALL">KEY: ALL</option>
                 </select>
 
                 <!-- Signal Filter Buttons -->
                 <div class="flex border border-[#333333] bg-black text-xs" id="signalFilters">
                     <button class="filter-btn px-3 py-1 font-bold border-r border-[#333333] bg-[#333333] text-white" data-val="ALL">ALL</button>
-                    <button class="filter-btn px-3 py-1 font-bold border-r border-[#333333] text-[#aaaaaa] hover:text-white hover:bg-[#1a1a1a]" data-val="BULL">BULL</button>
-                    <button class="filter-btn px-3 py-1 font-bold border-r border-[#333333] text-[#aaaaaa] hover:text-white hover:bg-[#1a1a1a]" data-val="BEAR">BEAR</button>
-                    <button class="filter-btn px-3 py-1 font-bold text-[#aaaaaa] hover:text-white hover:bg-[#1a1a1a]" data-val="FLAT">FLAT</button>
+                    <button class="filter-btn px-3 py-1 font-bold border-r border-[#333333] text-[#aaaaaa]" data-val="BULL">BULL</button>
+                    <button class="filter-btn px-3 py-1 font-bold border-r border-[#333333] text-[#aaaaaa]" data-val="BEAR">BEAR</button>
+                    <button class="filter-btn px-3 py-1 font-bold text-[#aaaaaa]" data-val="FLAT">FLAT</button>
                 </div>
 
                 <!-- Compact Toggle -->
                 <button id="compactToggle" class="p-1 border border-[#333333] bg-black hover:bg-[#1a1a1a] text-[#aaaaaa] hover:text-white transition-colors" title="요약 모드 전환">
-                    <svg id="icon-minimize" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;"><polyline points="4 14 10 14 10 20"></polyline><polyline points="20 10 14 10 14 4"></polyline><line x1="14" y1="10" x2="21" y2="3"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>
+                    <svg id="icon-minimize" class="hidden" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 14 10 14 10 20"></polyline><polyline points="20 10 14 10 14 4"></polyline><line x1="14" y1="10" x2="21" y2="3"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>
                     <svg id="icon-maximize" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>
                 </button>
             </div>
@@ -124,7 +134,6 @@
                         <!-- JS renders current ticker rank -->
                     </div>
 
-                    <!-- Expandable Panel on Hover -->
                     <div id="hoverView" class="absolute top-0 left-0 w-full bg-[#111111] p-4 z-50 hover-panel shadow-[0_15px_40px_rgba(0,0,0,0.9)] border border-[#00ffff] opacity-0 -translate-y-2 invisible">
                         <!-- JS renders full TOP 5 list -->
                     </div>
@@ -156,7 +165,7 @@
         <div class="p-2 bg-[#111111] border-t border-[#333333] text-[10px] text-[#555555] flex justify-between uppercase tracking-widest">
             <span>SYS_STATUS: CONNECTED (G_ACTIONS)</span>
             <span id="updateTime">UPDATE_TIME: --</span>
-            <span>R-ESTATE TERMINAL v3.1 // SECURE_ACCESS</span>
+            <span>R-ESTATE TERMINAL v3.2 // DYNAMIC_FILTER_ACTIVE</span>
         </div>
 
     </div>
@@ -164,6 +173,7 @@
     <script>
         // --- 1. State Management ---
         let allData = [];
+        let filteredData = [];
         let monthlyStats = [];
         let topTags = { regions: [], keywords: [], currentMonth: '' };
         
@@ -212,7 +222,6 @@
                             keyword: parseMeta(row.summary, 'Keyword')
                         }));
 
-                    // Sort by time descending
                     allData.sort((a, b) => new Date(b.collected_at) - new Date(a.collected_at));
                     
                     if (allData.length > 0) {
@@ -220,7 +229,7 @@
                     }
 
                     calculateAnalytics();
-                    populateDropdowns();
+                    updateFilterOptions(); // 초기 드롭다운 설정
                     applyFilters();
                     startTicker();
                 },
@@ -230,9 +239,8 @@
             });
         }
 
-        // --- 4. Analytics Logic (Filter-Independent) ---
+        // --- 4. Analytics Logic ---
         function calculateAnalytics() {
-            // Global Stats
             const total = allData.length;
             const bull = allData.filter(d => d.signal === 'BULL').length;
             const bear = allData.filter(d => d.signal === 'BEAR').length;
@@ -242,7 +250,6 @@
                 <span class="text-[#ff0000]">BER: ${bear}</span>
             `;
 
-            // Monthly Trend (Vertical Layout)
             const grouped = {};
             allData.forEach(d => {
                 const month = d.collected_at.substring(0, 7);
@@ -254,7 +261,6 @@
             monthlyStats = Object.values(grouped).sort((a, b) => b.month.localeCompare(a.month));
             renderMonthlyTrend();
 
-            // Hot Tags (Latest Month)
             if(monthlyStats.length > 0) {
                 const monthStr = monthlyStats[0].month;
                 topTags.currentMonth = monthStr;
@@ -277,7 +283,65 @@
             }
         }
 
-        // --- 5. UI Rendering ---
+        // --- 5. UI Rendering & Filter Logic ---
+        
+        /**
+         * 필터링된 결과에 따라 드롭다운 옵션을 동적으로 업데이트
+         */
+        function updateFilterOptions() {
+            const rSelect = document.getElementById('regionFilter');
+            const kSelect = document.getElementById('keywordFilter');
+            
+            // 현재 선택값 유지
+            const currentR = filterRegion;
+            const currentK = filterKeyword;
+
+            // 1. Region 옵션 계산 (현재 선택된 Keyword & Signal에 부합하는 Region들)
+            const availableRegions = [...new Set(allData
+                .filter(d => (filterKeyword === 'ALL' || d.keyword === filterKeyword) && (filterSignal === 'ALL' || d.signal === filterSignal))
+                .map(d => d.region)
+                .filter(r => r && r !== 'Unknown')
+            )].sort();
+
+            // 2. Keyword 옵션 계산 (현재 선택된 Region & Signal에 부합하는 Keyword들)
+            const availableKeywords = [...new Set(allData
+                .filter(d => (filterRegion === 'ALL' || d.region === filterRegion) && (filterSignal === 'ALL' || d.signal === filterSignal))
+                .map(d => d.keyword)
+                .filter(k => k && k !== 'Unknown')
+            )].sort();
+
+            // Region 드롭다운 갱신
+            rSelect.innerHTML = '<option value="ALL">REG: ALL</option>';
+            availableRegions.forEach(r => {
+                const opt = document.createElement('option');
+                opt.value = r;
+                opt.textContent = `REG: ${r}`;
+                if(r === currentR) opt.selected = true;
+                rSelect.appendChild(opt);
+            });
+
+            // Keyword 드롭다운 갱신
+            kSelect.innerHTML = '<option value="ALL">KEY: ALL</option>';
+            availableKeywords.forEach(k => {
+                const opt = document.createElement('option');
+                opt.value = k;
+                opt.textContent = `KEY: ${k}`;
+                if(k === currentK) opt.selected = true;
+                kSelect.appendChild(opt);
+            });
+        }
+
+        function applyFilters() {
+            filteredData = allData.filter(d => {
+                const sMatch = filterSignal === 'ALL' || d.signal === filterSignal;
+                const rMatch = filterRegion === 'ALL' || d.region === filterRegion;
+                const kMatch = filterKeyword === 'ALL' || d.keyword === filterKeyword;
+                return sMatch && rMatch && kMatch;
+            });
+            renderTable(filteredData);
+            updateFilterOptions(); // 연쇄적으로 필터 옵션 업데이트
+        }
+
         function renderMonthlyTrend() {
             const container = document.getElementById('trendTableContainer');
             if(monthlyStats.length === 0) return;
@@ -311,7 +375,6 @@
         }
 
         function renderTickerViews() {
-            // Full Expand Panel
             const hoverEl = document.getElementById('hoverView');
             let regHtml = topTags.regions.map((r, i) => `
                 <div class="flex justify-between text-[13px] py-1.5 hover:bg-[#222]">
@@ -363,27 +426,6 @@
             }, 2500);
         }
 
-        function populateDropdowns() {
-            const regs = [...new Set(allData.map(d => d.region).filter(r => r && r !== 'Unknown'))].sort();
-            const keys = [...new Set(allData.map(d => d.keyword).filter(k => k && k !== 'Unknown'))].sort();
-
-            const rs = document.getElementById('regionFilter');
-            regs.forEach(r => rs.innerHTML += `<option value="${r}">REG: ${r}</option>`);
-
-            const ks = document.getElementById('keywordFilter');
-            keys.forEach(k => ks.innerHTML += `<option value="${k}">KEY: ${k}</option>`);
-        }
-
-        function applyFilters() {
-            const data = allData.filter(d => {
-                const sMatch = filterSignal === 'ALL' || d.signal === filterSignal;
-                const rMatch = filterRegion === 'ALL' || d.region === filterRegion;
-                const kMatch = filterKeyword === 'ALL' || d.keyword === filterKeyword;
-                return sMatch && rMatch && kMatch;
-            });
-            renderTable(data);
-        }
-
         function renderTable(data) {
             const body = document.getElementById('newsTableBody');
             if(data.length === 0) {
@@ -429,8 +471,34 @@
         }
 
         // --- 6. Event Listeners ---
-        document.getElementById('regionFilter').addEventListener('change', e => { filterRegion = e.target.value; applyFilters(); });
-        document.getElementById('keywordFilter').addEventListener('change', e => { filterKeyword = e.target.value; applyFilters(); });
+        document.getElementById('regionFilter').addEventListener('change', e => { 
+            filterRegion = e.target.value; 
+            applyFilters(); 
+        });
+        
+        document.getElementById('keywordFilter').addEventListener('change', e => { 
+            filterKeyword = e.target.value; 
+            applyFilters(); 
+        });
+
+        // 모든 필터 초기화 버튼
+        document.getElementById('resetAllFilters').addEventListener('click', () => {
+            filterSignal = 'ALL';
+            filterRegion = 'ALL';
+            filterKeyword = 'ALL';
+            
+            // UI 초기화
+            document.querySelectorAll('#signalFilters .filter-btn').forEach(b => {
+                b.classList.remove('bg-[#333333]', 'text-white');
+                b.classList.add('text-[#aaaaaa]');
+                if(b.dataset.val === 'ALL') {
+                    b.classList.add('bg-[#333333]', 'text-white');
+                    b.classList.remove('text-[#aaaaaa]');
+                }
+            });
+            
+            applyFilters();
+        });
         
         document.querySelectorAll('#signalFilters .filter-btn').forEach(btn => {
             btn.addEventListener('click', e => {
@@ -447,8 +515,8 @@
 
         document.getElementById('compactToggle').addEventListener('click', () => {
             isCompact = !isCompact;
-            document.getElementById('icon-minimize').style.display = isCompact ? 'none' : 'block';
-            document.getElementById('icon-maximize').style.display = isCompact ? 'block' : 'none';
+            document.getElementById('icon-minimize').classList.toggle('hidden');
+            document.getElementById('icon-maximize').classList.toggle('hidden');
             applyFilters();
         });
 
@@ -477,7 +545,6 @@
             hv.classList.remove('opacity-100', 'translate-y-0', 'visible');
         });
 
-        // --- Start Terminal ---
         window.onload = initTerminal;
     </script>
 </body>
