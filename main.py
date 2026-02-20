@@ -4,10 +4,12 @@ import re
 import time
 from datetime import datetime
 from typing import Dict, List, Optional
-import google.generativeai as genai
 import pandas as pd
 import requests
 from bs4 import BeautifulSoup
+
+# 🔥 구글의 완전히 새로운 최신 라이브러리 불러오기
+from google import genai
 
 # --- 설정부 ---
 QUERY = "부동산 전망"
@@ -35,29 +37,17 @@ def extract_article_metadata(link: str) -> Dict[str, str]:
         pass
     return metadata
 
-def setup_gemini(api_key: str):
-    genai.configure(api_key=api_key)
-    try:
-        available_models = [m.name.replace('models/', '') for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
-        
-        # 🔥 2.5 버전은 하루 20개 제한이므로 삭제! 
-        # 하루 1,500개 무료인 1.5-flash를 최우선으로 찾습니다.
-        for pref in ["gemini-1.5-flash", "gemini-pro"]:
-            if pref in available_models:
-                print(f"✅ 사용 모델: {pref} (하루 1500건 넉넉한 모델)")
-                return genai.GenerativeModel(pref)
-    except Exception as e:
-        print(f"모델 탐색 실패: {e}")
-    return None
-
 def main():
     client_id = get_env("NAVER_CLIENT_ID")
     client_secret = get_env("NAVER_CLIENT_SECRET")
     gemini_api_key = get_env("GEMINI_API_KEY")
 
-    model = setup_gemini(gemini_api_key)
-    if not model: 
-        print("❌ 모델 설정 실패")
+    # 🔥 새로운 방식으로 구글 클라이언트 연결
+    try:
+        client = genai.Client(api_key=gemini_api_key)
+        print("✅ 구글 AI 클라이언트 연결 성공!")
+    except Exception as e:
+        print(f"❌ 구글 AI 설정 실패: {e}")
         return
 
     print(f"🚀 '{QUERY}' 뉴스 수집 시작...")
@@ -90,11 +80,14 @@ Signal: (BULL/BEAR/FLAT)
 """
 
         try:
-            # 1.5-flash는 제한이 넉넉하지만, 안전하게 5초만 대기합니다. (속도 대폭 향상!)
-            print(f"⏳ 대기 중... (현재 {len(analyzed)}/30 완료)")
+            print(f"⏳ 5초 대기 중... (현재 {len(analyzed)}/30 완료)")
             time.sleep(5) 
             
-            response = model.generate_content(prompt)
+            # 🔥 새로운 제미나이 호출 방식 (하루 1500건 넉넉한 1.5-flash 모델)
+            response = client.models.generate_content(
+                model='gemini-1.5-flash',
+                contents=prompt
+            )
             text = response.text
             
             if "INVALID" in text.upper():
@@ -124,6 +117,8 @@ Signal: (BULL/BEAR/FLAT)
     if analyzed:
         pd.DataFrame(analyzed).to_csv(CSV_PATH, index=False, encoding="utf-8-sig")
         print(f"🎉 총 {len(analyzed)}건 안전하게 저장 완료 후 종료합니다.")
+    else:
+        print("저장할 기사가 없습니다.")
 
 if __name__ == "__main__":
     main()
