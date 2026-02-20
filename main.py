@@ -13,7 +13,7 @@ from google import genai
 
 # --- 설정부 ---
 QUERY = "부동산 전망"
-TARGET_COUNT = 30 
+TARGET_COUNT = 20 
 CSV_PATH = "news_data.csv"
 
 # 🛑 퀄리티 필터: 거르고 싶은 언론사나 기자 이름을 넣으세요.
