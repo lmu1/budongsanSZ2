@@ -174,6 +174,8 @@ def summarize_with_gemini(api_key: str, article: Dict[str, str]) -> Dict[str, st
     model = genai.GenerativeModel("gemini-1.5-flash")
 
     content = article.get("content") or article.get("description")
+    
+    # 💡 에러 방지 1: 기사 본문을 4000자에서 3000자로 살짝 줄여서 토큰 초과(용량 초과) 방지
     prompt = f"""
 너는 부동산 시장 애널리스트다.
 아래 기사 내용을 2~4문장으로 핵심 요약하고, 마지막에 다음 정보를 각각 한 줄로 출력하라:
@@ -182,7 +184,7 @@ Keyword: (핵심단어 1~3개)
 Signal: (BULL, BEAR, FLAT 중 하나)
 
 기사 제목: {article['title']}
-기사 본문: {content[:4000]}
+기사 본문: {content[:3000]}
 """.strip()
 
     try:
@@ -195,7 +197,12 @@ Signal: (BULL, BEAR, FLAT 중 하나)
     keyword = extract_tag_field(text, "Keyword", "부동산")
     signal = extract_tag_field(text, "Signal", "FLAT")
 
-    summary_part = re.split(r"\n\s*Region\s*:", text, maxsplit=1, flags=re.IGNORECASE)[0].strip()
+    # 💡 에러 방지 2: 제미나이가 답변 형식을 틀렸을 때 발생하는 에러 처리
+    try:
+        summary_part = re.split(r"\n\s*Region\s*:", text, maxsplit=1, flags=re.IGNORECASE)[0].strip()
+    except Exception:
+        summary_part = text
+
     tag = build_tag(article["publisher"], article["reporter"], region, keyword, signal)
 
     return {
@@ -210,12 +217,22 @@ Signal: (BULL, BEAR, FLAT 중 하나)
 
 
 def save_news_data(rows: List[Dict[str, str]]) -> None:
+    # 💡 에러 방지 3: 저장할 데이터가 0건일 때 에러 나는 것 방지
+    if not rows:
+        print("저장할 데이터가 없습니다.")
+        return
+
     new_df = pd.DataFrame(rows)
 
     if os.path.exists(CSV_PATH):
         existing_df = pd.read_csv(CSV_PATH)
         existing_links = set(existing_df.get("link", pd.Series(dtype=str)).dropna().tolist())
         append_df = new_df[~new_df["link"].isin(existing_links)]
+        
+        if append_df.empty:
+            print("새로 추가할 기사가 없습니다 (모두 중복).")
+            return
+            
         combined_df = pd.concat([existing_df, append_df], ignore_index=True)
         combined_df = combined_df.drop_duplicates(subset=["link"], keep="first")
         combined_df.to_csv(CSV_PATH, index=False, encoding="utf-8-sig")
@@ -230,16 +247,30 @@ def main() -> None:
     client_secret = get_env("NAVER_CLIENT_SECRET")
     gemini_api_key = get_env("GEMINI_API_KEY")
 
+    print(f"[{datetime.now()}] 네이버 뉴스 수집 시작...")
     articles = fetch_naver_news(client_id, client_secret)
-    if len(articles) < TARGET_COUNT:
-        raise RuntimeError(f"필터 통과 기사가 {TARGET_COUNT}건 미만입니다. 현재 {len(articles)}건")
+    
+    current_count = len(articles)
+    if current_count == 0:
+        print("수집된 기사가 없습니다.")
+        return
+
+    # 💡 에러 방지 4: 30건이 안 돼도 에러 띄우지 않고 모인 만큼만 처리
+    process_count = min(current_count, TARGET_COUNT)
+    print(f"[{datetime.now()}] 총 {current_count}건 중 {process_count}건 제미나이 요약 시작 (5초 간격)")
 
     analyzed: List[Dict[str, str]] = []
-    for article in articles[:TARGET_COUNT]:
+    for i, article in enumerate(articles[:process_count]):
+        print(f"[{i+1}/{process_count}] 요약 중: {article['title'][:30]}...")
+        
         analyzed.append(summarize_with_gemini(gemini_api_key, article))
-        time.sleep(3)
+        
+        # 💡 핵심 쿨타임: 마지막 기사가 아닐 때만 5초 대기 (무료 버전 제한 방지)
+        if i < process_count - 1:
+            time.sleep(5)
 
     save_news_data(analyzed)
+    print(f"[{datetime.now()}] 모든 작업이 완료되었습니다.")
 
 
 if __name__ == "__main__":
