@@ -123,7 +123,7 @@ def build_tag(publisher: str, reporter: str, region: str, keyword: str, signal: 
 def summarize_with_gemini(api_key: str, article: Dict[str, str]) -> Optional[Dict[str, str]]:
     genai.configure(api_key=api_key)
     # 💡 1.5 Pro 모델 적용
-    model = genai.GenerativeModel("gemini-1.5-pro")
+    model = genai.GenerativeModel("gemini-1.5-flash")
 
     content = article.get("content") or article.get("description")
     
