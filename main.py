@@ -13,7 +13,7 @@ from bs4 import BeautifulSoup
 
 # --- 설정부 ---
 QUERY = "부동산 전망"
-TARGET_COUNT = 30
+TARGET_COUNT = 30 # 30건을 다 채우려면 약 7~8분이 소요됩니다.
 CSV_PATH = "news_data.csv"
 
 def get_env(name: str) -> str:
@@ -30,7 +30,6 @@ def extract_article_metadata(link: str) -> Dict[str, str]:
     try:
         resp = requests.get(link, timeout=10, headers={"User-Agent": "Mozilla/5.0"})
         soup = BeautifulSoup(resp.text, "html.parser")
-        # 본문 및 언론사 추출 (네이버 뉴스 위주)
         content_node = soup.select_one("article#dic_area") or soup.select_one("#newsct_article") or soup.select_one("#articleBodyContents")
         if content_node:
             metadata["content"] = content_node.get_text(" ", strip=True)[:2500]
@@ -41,32 +40,21 @@ def extract_article_metadata(link: str) -> Dict[str, str]:
         pass
     return metadata
 
-# 🔥 [핵심] 사용 가능한 모델을 서버에서 직접 목록 받아와서 고르기
 def setup_gemini(api_key: str):
     genai.configure(api_key=api_key)
-    print("🔎 사용 가능한 모델 목록 조회 중...")
-    
     available_models = []
     try:
         for m in genai.list_models():
             if 'generateContent' in m.supported_generation_methods:
-                # 'models/' 접두사를 제거하고 순수 이름만 보관
                 clean_name = m.name.replace('models/', '')
                 available_models.append(clean_name)
-                print(f" - 발견된 모델: {clean_name}")
-    except Exception as e:
-        print(f"❌ 모델 목록 조회 실패: {e}")
-        return None
-
-    # 선호 순위: flash -> pro -> 그 외 첫 번째
-    for pref in ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-pro"]:
-        if pref in available_models:
-            print(f"✅ 최종 선택된 모델: {pref}")
-            return genai.GenerativeModel(pref)
-    
-    if available_models:
-        print(f"⚠️ 선호 모델이 없어 첫 번째 모델({available_models[0]})을 선택합니다.")
-        return genai.GenerativeModel(available_models[0])
+        # 최신 모델(2.5)부터 하위 모델까지 순차 탐색
+        for pref in ["gemini-2.5-flash", "gemini-1.5-flash", "gemini-pro"]:
+            if pref in available_models:
+                print(f"✅ 사용 모델: {pref} (분당 5회 제한 모드 가동)")
+                return genai.GenerativeModel(pref)
+    except:
+        pass
     return None
 
 def main():
@@ -74,16 +62,12 @@ def main():
     client_secret = get_env("NAVER_CLIENT_SECRET")
     gemini_api_key = get_env("GEMINI_API_KEY")
 
-    # 모델 설정
     model = setup_gemini(gemini_api_key)
-    if not model:
-        print("❌ 사용할 수 있는 AI 모델이 없습니다. API 키를 확인하세요.")
-        return
+    if not model: return
 
-    # 네이버 뉴스 검색
-    print(f"🚀 '{QUERY}' 검색 시작...")
+    print(f"🚀 '{QUERY}' 수집 시작...")
     headers = {"X-Naver-Client-Id": client_id, "X-Naver-Client-Secret": client_secret}
-    params = {"query": QUERY, "display": 50, "sort": "date"}
+    params = {"query": QUERY, "display": 100, "sort": "date"}
     res = requests.get("https://openapi.naver.com/v1/search/news.json", headers=headers, params=params)
     items = res.json().get("items", [])
 
@@ -94,46 +78,50 @@ def main():
         link = item.get("originallink") or item.get("link")
         meta = extract_article_metadata(link)
         
-        prompt = f"""
-부동산 애널리스트로서 아래 기사를 3문장 이내로 요약해.
-정치/사회/사건사고 기사면 "Signal: INVALID"라고만 답해.
+        prompt = f"부동산 전문가로서 아래 기사를 3문장 이내 요약해. 정치기사면 Signal: INVALID라고 답해.\n제목: {clean_html(item['title'])}\n본문: {meta['content']}\n형식:\nRegion: 지역\nKeyword: 키워드\nSignal: (BULL/BEAR/FLAT)"
 
-제목: {clean_html(item['title'])}
-본문: {meta['content']}
+        # 🔥 재시도 로직 추가 (429 에러 방어)
+        success = False
+        retries = 0
+        while not success and retries < 3:
+            try:
+                response = model.generate_content(prompt)
+                text = response.text
+                
+                if "INVALID" in text.upper():
+                    print(f"🚫 무관한 기사 패스")
+                    success = True # 처리는 성공한 것으로 간주
+                    continue
 
-마지막에 아래 형식 추가:
-Region: 지역명
-Keyword: 키워드
-Signal: (BULL, BEAR, FLAT 중 하나)
-"""
-        try:
-            response = model.generate_content(prompt)
-            text = response.text
-            
-            if "INVALID" in text.upper():
-                print(f"🚫 건너뜀 (무관한 기사): {item['title'][:20]}...")
-                continue
+                signal = "FLAT"
+                if "BULL" in text.upper(): signal = "BULL"
+                elif "BEAR" in text.upper(): signal = "BEAR"
 
-            signal = "FLAT"
-            if "BULL" in text.upper(): signal = "BULL"
-            elif "BEAR" in text.upper(): signal = "BEAR"
-
-            analyzed.append({
-                "title": clean_html(item['title']),
-                "link": link,
-                "summary": text.strip(),
-                "publisher": meta['publisher'],
-                "signal": signal,
-                "collected_at": datetime.now().strftime("%Y-%m-%d %H:%M")
-            })
-            print(f"✅ 요약 성공: {item['title'][:20]}...")
-            time.sleep(4) # 무료 할당량 보호
-        except Exception as e:
-            print(f"❌ 요약 중 오류 발생: {e}")
+                analyzed.append({
+                    "title": clean_html(item['title']),
+                    "link": link,
+                    "summary": text.strip(),
+                    "publisher": meta['publisher'],
+                    "signal": signal,
+                    "collected_at": datetime.now().strftime("%Y-%m-%d %H:%M")
+                })
+                print(f"✅ 요약 완료 ({len(analyzed)}/{TARGET_COUNT})")
+                success = True
+                # 무료 티어 5 RPM 제한을 지키기 위해 15초 대기
+                time.sleep(15) 
+                
+            except Exception as e:
+                if "429" in str(e):
+                    print(f"⚠️ 속도 제한 감지! 40초간 휴식 후 다시 시도합니다... (시도 {retries+1}/3)")
+                    time.sleep(40)
+                    retries += 1
+                else:
+                    print(f"❌ 기타 오류: {e}")
+                    break
 
     if analyzed:
         pd.DataFrame(analyzed).to_csv(CSV_PATH, index=False, encoding="utf-8-sig")
-        print(f"🎉 총 {len(analyzed)}건 저장 완료!")
+        print(f"🎉 저장 완료!")
 
 if __name__ == "__main__":
     main()
