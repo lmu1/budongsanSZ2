@@ -1,22 +1,19 @@
 diff --git a/.github/workflows/scrape.yml b/.github/workflows/scrape.yml
-index 80afca997eccdb2777dbfd36d5e552e13856e7cb..354965b0aeaed2c88516467ee30ebea7bd498745 100644
+index 80afca997eccdb2777dbfd36d5e552e13856e7cb..56f668b60e0e297789ef443e234013b7156b99f0 100644
 --- a/.github/workflows/scrape.yml
 +++ b/.github/workflows/scrape.yml
-@@ -1,45 +1,59 @@
+@@ -1,45 +1,65 @@
 -name: Daily Real Estate News Scrape
 +name: Daily Real Estate Signal Scraper
  
--on:
-+"on":
+ on:
    schedule:
--    - cron: '30 23 * * *'
--  workflow_dispatch:
-+    - cron: "30 23 * * *"
-+  workflow_dispatch: {}
-+
+     - cron: '30 23 * * *'
+   workflow_dispatch:
+ 
 +permissions:
 +  contents: write
- 
++
  jobs:
    scrape-and-commit:
      runs-on: ubuntu-latest
@@ -32,21 +29,19 @@ index 80afca997eccdb2777dbfd36d5e552e13856e7cb..354965b0aeaed2c88516467ee30ebea7
 +      - name: Set up Python
          uses: actions/setup-python@v5
          with:
--          python-version: '3.11'
-+          python-version: "3.11"
+           python-version: '3.11'
  
        - name: Install dependencies
          run: |
-+          echo "Workspace: ${GITHUB_WORKSPACE}"
-+          ls -la "${GITHUB_WORKSPACE}"
-+          if [ ! -f "${GITHUB_WORKSPACE}/requirements.txt" ]; then
-+            echo "requirements.txt not found at repo root"
-+            find "${GITHUB_WORKSPACE}" -maxdepth 3 -name "requirements.txt" -print
+           python -m pip install --upgrade pip
++          if [ ! -f requirements.txt ]; then
++            echo 'requirements.txt not found in repo root'
++            pwd
++            ls -la
++            find . -maxdepth 3 -name requirements.txt -print
 +            exit 1
 +          fi
-           python -m pip install --upgrade pip
--          pip install -r requirements.txt
-+          pip install -r "${GITHUB_WORKSPACE}/requirements.txt"
+           pip install -r requirements.txt
  
        - name: Run scraper
          env:
@@ -55,28 +50,36 @@ index 80afca997eccdb2777dbfd36d5e552e13856e7cb..354965b0aeaed2c88516467ee30ebea7
            GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
 -        run: python main.py
 +        run: |
-+          if [ ! -f "${GITHUB_WORKSPACE}/main.py" ]; then
-+            echo "main.py not found at repo root"
-+            find "${GITHUB_WORKSPACE}" -maxdepth 3 -name "main.py" -print
++          if [ ! -f main.py ]; then
++            echo 'main.py not found in repo root'
++            pwd
++            ls -la
++            find . -maxdepth 3 -name main.py -print
 +            exit 1
 +          fi
-+          python "${GITHUB_WORKSPACE}/main.py"
++          python main.py
  
 -      - name: Commit and push updated CSV
 +      - name: Commit and push news_data.csv
          run: |
-           git config user.name "github-actions[bot]"
-           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+-          git config user.name "github-actions[bot]"
+-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 -          if [ -f news_data.csv ] && [ -n "$(git status --porcelain news_data.csv)" ]; then
 -            git add news_data.csv
 -            git commit -m "chore: update news data"
 -            git push
 -          else
 -            echo "No changes to news_data.csv"
++          git config user.name 'github-actions[bot]'
++          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
++          if [ ! -f news_data.csv ]; then
++            echo 'news_data.csv not found; nothing to commit'
++            exit 0
++          fi
 +          git add news_data.csv
 +          if git diff --cached --quiet; then
-+            echo "No changes to commit"
++            echo 'No changes to commit'
 +            exit 0
            fi
-+          git commit -m "chore: update news_data.csv"
++          git commit -m 'chore: update news_data.csv'
 +          git push
