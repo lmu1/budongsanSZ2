@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>부동산 시그널 대시보드</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+    <style>
+        body { font-family: 'Malgun Gothic', sans-serif; padding: 20px; background: #f4f7f6; color: #333; }
+        h1 { color: #2c3e50; }
+        .filter-container { margin-bottom: 20px; }
+        .filter-btn { padding: 10px 15px; margin-right: 5px; cursor: pointer; border: none; border-radius: 5px; font-weight: bold; transition: 0.2s; }
+        .filter-btn:hover { opacity: 0.8; }
+        
+        /* 시그널 색상 설정 */
+        .ALL { background: #fff; border: 1px solid #ccc; color: #333; }
+        .BULL { background: #ffebee; color: #c62828; } /* 상승 - 빨강 */
+        .BEAR { background: #e3f2fd; color: #1565c0; } /* 하락 - 파랑 */
+        .FLAT { background: #eeeeee; color: #424242; } /* 보합 - 회색 */
+        
+        table { width: 100%; border-collapse: collapse; background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        th, td { border: 1px solid #e0e0e0; padding: 15px; text-align: left; }
+        th { background: #f8f9fa; font-weight: bold; }
+        tr:hover { background-color: #f5f5f5; }
+        
+        .tag { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 0.85em; font-weight: bold; margin-bottom: 8px; }
+        a { color: #2980b9; text-decoration: none; font-size: 1.1em; }
+        a:hover { text-decoration: underline; }
+        .summary { font-size: 0.95em; color: #555; margin-top: 8px; line-height: 1.5; }
+        .meta-info { font-size: 0.85em; color: #888; }
+    </style>
+</head>
+<body>
+    <h1>🏠 부동산 전망 시그널 리포트</h1>
+    
+    <div class="filter-container">
+        <button class="filter-btn ALL" onclick="filterTable('ALL')">전체보기</button>
+        <button class="filter-btn BULL" onclick="filterTable('BULL')">🔴 BULL (상승)</button>
+        <button class="filter-btn BEAR" onclick="filterTable('BEAR')">🔵 BEAR (하락)</button>
+        <button class="filter-btn FLAT" onclick="filterTable('FLAT')">⚪ FLAT (보합)</button>
+    </div>
+
+    <table id="newsTable">
+        <thead>
+            <tr>
+                <th width="15%">날짜</th>
+                <th width="15%">출처 / 기자</th>
+                <th width="70%">AI 시그널 및 요약</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr><td colspan="3">데이터를 불러오는 중입니다...</td></tr>
+        </tbody>
+    </table>
+
+    <script>
+        let allData = [];
+        
+        // 깃허브에 저장된 news_data.csv 파일을 불러옵니다.
+        Papa.parse("news_data.csv", {
+            download: true, 
+            header: true,
+            complete: function(results) {
+                allData = results.data.filter(row => row.title); // 빈 줄 제거
+                // 날짜 최신순으로 정렬
+                allData.sort((a, b) => new Date(b.pub_date) - new Date(a.pub_date));
+                renderTable(allData);
+            },
+            error: function() {
+                document.querySelector("#newsTable tbody").innerHTML = "<tr><td colspan='3'>아직 수집된 데이터(news_data.csv)가 없거나 오류가 발생했습니다.</td></tr>";
+            }
+        });
+
+        function renderTable(data) {
+            const tbody = document.querySelector("#newsTable tbody");
+            tbody.innerHTML = "";
+            
+            data.forEach(row => {
+                const tr = document.createElement("tr");
+                tr.className = row.signal;
+                
+                // 날짜 깔끔하게 자르기
+                const dateOnly = row.pub_date ? row.pub_date.split('T')[0] : '알수없음';
+                
+                tr.innerHTML = `
+                    <td><b>${dateOnly}</b></td>
+                    <td>
+                        <div class="meta-info"><b>${row.publisher}</b></div>
+                        <div class="meta-info">${row.reporter}</div>
+                    </td>
+                    <td>
+                        <span class="tag ${row.signal}">${row.signal}</span>
+                        <span class="tag FLAT">${row.region}</span>
+                        <span class="tag FLAT">${row.keyword}</span><br>
+                        <a href="${row.link}" target="_blank"><b>${row.title}</b></a>
+                        <div class="summary">${row.summary ? row.summary.replace(/\\n/g, '<br>') : '요약 없음'}</div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function filterTable(signal) {
+            if(signal === 'ALL') {
+                renderTable(allData);
+            } else {
+                const filtered = allData.filter(row => row.signal === signal);
+                renderTable(filtered);
+            }
+        }
+    </script>
+</body>
+</html>
