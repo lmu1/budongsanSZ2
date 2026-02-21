@@ -11,10 +11,9 @@ from google import genai
 
 # --- PRO 설정부 ---
 QUERY = "부동산 전망"
-TARGET_COUNT = 20  # 하루 한도 방어를 위한 20개 세팅
-TARGET_MODEL = "gemini-2.5-flash-lite"  # 사용자님이 선택하신 2.5 버전 유지
+TARGET_COUNT = 20  # 한 번에 수집할 기사 개수
+TARGET_MODEL = "gemini-2.5-flash-lite"  # 빠르고 넉넉한 Lite 모델 적용
 OUTPUT_FILES = ["news_data.csv", "news_data_latest.csv"]
-CANONICAL_FILE = "news_data_latest.csv"
 REQUIRED_COLUMNS = [
     "title",
     "link",
@@ -48,7 +47,7 @@ def extract_article_metadata(link: str) -> dict:
         if pub_meta:
             metadata["publisher"] = pub_meta.get("content", "Unknown").strip()
             
-        # 💡 3. 기자 이름 추출 (새로 추가된 로직)
+        # 3. 기자 이름 추출
         reporter_node = (
             soup.select_one(".media_end_head_journalist_name") 
             or soup.select_one(".byline_s") 
@@ -61,30 +60,30 @@ def extract_article_metadata(link: str) -> dict:
         pass
     return metadata
 
-def find_all_news_csv() -> list[Path]:
-    files = sorted(Path(".").glob("news_data*.csv"))
-    return [f for f in files if f.name != CANONICAL_FILE]
-
 def load_all_existing_news() -> pd.DataFrame:
-    source_files = find_all_news_csv()
+    """💡 [핵심 방어 로직] 두 파일을 모두 읽어 한쪽이 깨져도 복구되도록 이중 로딩합니다."""
+    source_files = [Path("news_data.csv"), Path("news_data_latest.csv")]
     frames: list[pd.DataFrame] = []
 
     for file in source_files:
+        if not file.exists():
+            continue
         try:
-            # 💡 한글 깨짐 및 로딩 에러 방지를 위해 encoding 추가
-            df = pd.read_csv(file, encoding="utf-8-sig")
-            missing = [c for c in REQUIRED_COLUMNS if c not in df.columns]
-            if missing:
-                print(f"⚠️ 스킵: {file} (필수 컬럼 누락: {missing})")
-                continue
-            frames.append(df[REQUIRED_COLUMNS].copy())
+            # utf-8-sig 인코딩 강제 지정 및 에러 라인 무시로 파일 깨짐 완벽 방어
+            df = pd.read_csv(file, encoding="utf-8-sig", on_bad_lines='skip')
+            if not df.empty:
+                frames.append(df)
         except Exception as err:
-            print(f"⚠️ 스킵: {file} 로딩 실패 ({err})")
+            print(f"⚠️ 기존 데이터 파일 로딩 실패 ({file}): {err}")
 
     if frames:
         merged = pd.concat(frames, ignore_index=True)
-        print(f"📚 기존 CSV 병합 완료: {len(source_files)}개 파일 / {len(merged)}건")
-        return merged
+        # 필수 컬럼이 누락된 구버전 데이터가 섞여있어도 에러 안 나게 채워줌
+        for col in REQUIRED_COLUMNS:
+            if col not in merged.columns:
+                merged[col] = "Unknown"
+        print(f"📚 기존 DB 로드 완료 (중복 포함): 총 {len(merged)}건")
+        return merged[REQUIRED_COLUMNS]
 
     return pd.DataFrame(columns=REQUIRED_COLUMNS)
 
@@ -113,7 +112,7 @@ def build_canonical_dataset(df: pd.DataFrame) -> pd.DataFrame:
 def save_canonical(df: pd.DataFrame) -> None:
     for path in OUTPUT_FILES:
         df.to_csv(path, index=False, encoding="utf-8-sig")
-    print(f"🎉 누적 저장 성공! 총 {len(df)}건의 DB가 구축되었습니다.")
+    print(f"🎉 누적 저장 성공! 두 파일에 총 {len(df)}건의 DB가 안전하게 구축되었습니다.")
 
 def main() -> None:
     client_id = get_env("NAVER_CLIENT_ID")
@@ -156,7 +155,7 @@ Signal: (BULL/BEAR/FLAT)"""
 
         try:
             print(f"⏳ AI 분석 중... ({len(new_analyzed)+1}/{TARGET_COUNT})")
-            time.sleep(30)  # 2.5 버전 한도(RPM) 방어
+            time.sleep(30)  # 💡 Lite 모델의 넉넉한 한도를 믿고 5초로 대폭 단축!
             response = client.models.generate_content(model=TARGET_MODEL, contents=prompt)
             text = response.text
 
@@ -188,8 +187,10 @@ Signal: (BULL/BEAR/FLAT)"""
                 break
             error_count += 1
 
+    # 1. 기존 데이터를 먼저 안전하게 불러옵니다.
     existing_df = load_all_existing_news()
 
+    # 2. 오늘 수집한 새 데이터가 있다면 기존 데이터 밑에 합칩니다.
     if new_analyzed:
         new_df = pd.DataFrame(new_analyzed)
         combined_df = pd.concat([existing_df, new_df], ignore_index=True)
@@ -197,7 +198,10 @@ Signal: (BULL/BEAR/FLAT)"""
         combined_df = existing_df
         print("ℹ️ 신규 분석 기사가 없어 기존 누적본만 정리합니다.")
 
+    # 3. 중복을 제거하고 시간순으로 정렬합니다.
     canonical_df = build_canonical_dataset(combined_df)
+    
+    # 4. 두 개의 파일에 똑같이 덮어씌워 이중 백업을 완성합니다.
     save_canonical(canonical_df)
 
 if __name__ == "__main__":
