@@ -2,7 +2,8 @@ name: Daily Real Estate Signal Scraper
 
 on:
   schedule:
-    - cron: '30 23 * * *'
+    # KST 기준 매일 오전 9시 5분 실행 (UTC 기준 00:05)
+    - cron: '5 0 * * *'
   workflow_dispatch:
 
 permissions:
