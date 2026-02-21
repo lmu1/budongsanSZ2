@@ -12,7 +12,7 @@ from google import genai
 # --- PRO 설정부 ---
 QUERY = "부동산 전망"
 TARGET_COUNT = 20  # 하루 한도 방어를 위한 20개 세팅
-TARGET_MODEL = "gemini-2.5-flash"  # 사용자님이 선택하신 2.5 버전 유지
+TARGET_MODEL = "gemini-2.5-flash-lite"  # 사용자님이 선택하신 2.5 버전 유지
 OUTPUT_FILES = ["news_data.csv", "news_data_latest.csv"]
 CANONICAL_FILE = "news_data_latest.csv"
 REQUIRED_COLUMNS = [
