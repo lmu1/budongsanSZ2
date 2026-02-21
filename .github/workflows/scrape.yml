@@ -37,21 +37,20 @@ jobs:
           ls -la
           test -f requirements.txt || (echo 'requirements.txt not found in repo root' && find . -maxdepth 3 -name requirements.txt -print && exit 1)
           test -f main.py || (echo 'main.py not found in repo root' && find . -maxdepth 3 -name main.py -print && exit 1)
-          test -f update_news_data_latest.py || (echo 'update_news_data_latest.py not found' && exit 1)
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run scraper and merge data
+      - name: Run scraper
         env:
           NAVER_CLIENT_ID: ${{ secrets.NAVER_CLIENT_ID }}
           NAVER_CLIENT_SECRET: ${{ secrets.NAVER_CLIENT_SECRET }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
+          # 💡 이제 main.py 하나만 실행하면 수집부터 두 파일 이중 백업까지 다 처리됩니다!
           python main.py
-          python update_news_data_latest.py
 
       - name: Commit and push CSV files
         run: |
@@ -63,7 +62,7 @@ jobs:
             exit 0
           fi
 
-          # 두 개의 파일을 모두 스테이징합니다.
+          # 두 개의 파일을 모두 깃허브에 저장합니다.
           git add news_data.csv news_data_latest.csv
           
           if git diff --cached --quiet; then
