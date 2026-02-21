@@ -156,7 +156,7 @@ Signal: (BULL/BEAR/FLAT)"""
 
         try:
             print(f"⏳ AI 분석 중... ({len(new_analyzed)+1}/{TARGET_COUNT})")
-            time.sleep(15)  # 2.5 버전 한도(RPM) 방어
+            time.sleep(30)  # 2.5 버전 한도(RPM) 방어
             response = client.models.generate_content(model=TARGET_MODEL, contents=prompt)
             text = response.text
 
