@@ -13,15 +13,7 @@
         
         :root {
             --terminal-bg: #000000;
-            --terminal-surface: #050505;
-            --terminal-header: #111111;
-            --terminal-border: #333333;
-            --terminal-accent: #00ffff;
             --terminal-text: #ffb000;
-            --terminal-white: #ffffff;
-            --terminal-green: #00ff00;
-            --terminal-red: #ff0000;
-            --terminal-gray: #aaaaaa;
         }
 
         body { 
@@ -33,10 +25,17 @@
         }
         .font-mono { font-family: 'JetBrains Mono', monospace; }
         
+        /* 스크롤바 커스텀 */
         ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-track { background: #111; }
         ::-webkit-scrollbar-thumb { background: #333; }
         ::-webkit-scrollbar-thumb:hover { background: #555; }
+
+        /* 터미널 폴더 스타일 */
+        details > summary { list-style: none; }
+        details > summary::-webkit-details-marker { display: none; }
+        details > summary::before { content: '[+] '; color: #555; font-size: 11px; margin-right: 4px; }
+        details[open] > summary::before { content: '[-] '; color: #00ffff; }
 
         .ticker-animate { transition: opacity 0.3s ease; }
         .hover-panel { transition: all 0.2s ease-in-out; }
@@ -50,124 +49,157 @@
             padding-right: 2.5rem !important;
         }
 
-        /* 버튼 호버 효과 가독성 개선 */
         .filter-btn:hover { background-color: #1a1a1a; color: #ffffff; }
         .reset-btn:hover { background-color: #ff0000; color: #ffffff; border-color: #ff0000; }
+        
+        /* 선택된 날짜 노드 하이라이트 */
+        .date-active { background-color: #333333; color: #ffffff !important; font-weight: bold; border-left: 2px solid #00ffff; padding-left: 6px !important; }
     </style>
 </head>
 <body class="p-2 md:p-4 text-[13px] tracking-tight font-mono">
-    <div class="max-w-[1400px] mx-auto border border-[#333333] shadow-2xl bg-[#050505] relative overflow-hidden">
+    <!-- 메인 레이아웃 -->
+    <div class="max-w-[1600px] mx-auto flex flex-col lg:flex-row gap-3 items-start">
         
-        <!-- Header / Control Bar -->
-        <div class="flex flex-col md:flex-row items-start md:items-center justify-between p-2 md:p-3 border-b border-[#333333] bg-[#111111]">
-            <div class="flex items-center gap-4 mb-3 md:mb-0">
-                <h1 class="font-bold text-base text-white flex items-center gap-2 tracking-widest uppercase">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#00ffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>
-                    R-ESTATE TERMINAL
-                </h1>
-                <div class="flex gap-2 text-xs" id="top-stats">
-                    <span class="text-[#00ffff]">TOT: 0</span>
-                    <span class="text-[#00ff00]">BUL: 0</span>
-                    <span class="text-[#ff0000]">BER: 0</span>
+        <!-- 🗂️ LEFT SIDEBAR: TIME ARCHIVE (기본 숨김) -->
+        <div id="timeArchiveSidebar" class="hidden w-full lg:w-[260px] border border-[#333333] shadow-2xl bg-[#050505] flex-shrink-0 flex-col h-[300px] lg:h-[calc(100vh-2rem)] sticky top-4">
+            <div class="p-2 border-b border-[#333333] bg-[#111111] font-bold text-white tracking-widest text-[11px] flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#00ffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+                    ARCHIVE EXPLORER
                 </div>
+                <span class="text-[#555] text-[9px]">DIR_TREE</span>
             </div>
             
-            <div class="flex flex-wrap items-center gap-2">
-                <!-- Reset Button -->
-                <button id="resetAllFilters" class="reset-btn border border-[#ff0000] text-[#ff0000] text-[11px] px-3 py-1 font-bold transition-all bg-transparent rounded-sm flex items-center gap-1">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
-                    [!] RESET
-                </button>
-
-                <!-- Dropdown Filters -->
-                <select id="regionFilter" class="border border-[#333333] bg-black text-xs px-3 py-1 font-bold text-[#00ffff] outline-none hover:bg-[#1a1a1a] cursor-pointer rounded-sm min-w-[120px]">
-                    <option value="ALL">REG: ALL</option>
-                </select>
-                <select id="keywordFilter" class="border border-[#333333] bg-black text-xs px-3 py-1 font-bold text-[#00ffff] outline-none hover:bg-[#1a1a1a] cursor-pointer rounded-sm min-w-[120px]">
-                    <option value="ALL">KEY: ALL</option>
-                </select>
-
-                <!-- Signal Filter Buttons -->
-                <div class="flex border border-[#333333] bg-black text-xs" id="signalFilters">
-                    <button class="filter-btn px-3 py-1 font-bold border-r border-[#333333] bg-[#333333] text-white" data-val="ALL">ALL</button>
-                    <button class="filter-btn px-3 py-1 font-bold border-r border-[#333333] text-[#aaaaaa]" data-val="BULL">BULL</button>
-                    <button class="filter-btn px-3 py-1 font-bold border-r border-[#333333] text-[#aaaaaa]" data-val="BEAR">BEAR</button>
-                    <button class="filter-btn px-3 py-1 font-bold text-[#aaaaaa]" data-val="FLAT">FLAT</button>
-                </div>
-
-                <!-- Compact Toggle -->
-                <button id="compactToggle" class="p-1 border border-[#333333] bg-black hover:bg-[#1a1a1a] text-[#aaaaaa] hover:text-white transition-colors" title="요약 모드 전환">
-                    <svg id="icon-minimize" class="hidden" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 14 10 14 10 20"></polyline><polyline points="20 10 14 10 14 4"></polyline><line x1="14" y1="10" x2="21" y2="3"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>
-                    <svg id="icon-maximize" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>
-                </button>
+            <div class="p-3 overflow-y-auto flex-1 text-xs" id="sidebar-tree">
+                <div class="text-center text-[#555] mt-10 animate-pulse">LOADING ARCHIVE...</div>
+                <!-- JS 렌더링 영역 -->
+            </div>
+            
+            <div class="p-2 bg-[#111111] border-t border-[#333333] text-[9px] text-[#555555] text-center tracking-widest">
+                SELECT DATE TO FILTER
             </div>
         </div>
 
-        <!-- ANALYTICS PANEL -->
-        <div class="flex flex-col border-b border-[#333333] bg-[#0a0a0a]">
+        <!-- 🖥️ RIGHT MAIN: TERMINAL DASHBOARD -->
+        <div class="flex-1 w-full border border-[#333333] shadow-2xl bg-[#050505] relative overflow-hidden flex flex-col min-w-0">
             
-            <!-- 1. Monthly Trend (Accordion) -->
-            <div class="w-full border-b border-[#333333] p-3 md:px-4">
-                <div class="flex items-center justify-between cursor-pointer group" id="trendToggleBtn">
-                    <h2 class="text-[#00ffff] text-[11px] font-bold flex items-center gap-1 uppercase group-hover:text-white transition-colors">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg> 
-                        Monthly Trend
-                    </h2>
-                    <div class="text-[10px] text-[#555555] tracking-wider group-hover:text-[#00ffff] transition-colors" id="trendToggleText">
-                        [+] EXPAND
+            <!-- Header / Control Bar -->
+            <div class="flex flex-col xl:flex-row items-start xl:items-center justify-between p-2 md:p-3 border-b border-[#333333] bg-[#111111]">
+                <div class="flex items-center gap-3 mb-3 xl:mb-0">
+                    <!-- 🚀 NEW: Archive Toggle Button -->
+                    <button id="toggleArchiveBtn" class="flex items-center gap-1 border border-[#333333] bg-black hover:bg-[#1a1a1a] text-[#00ffff] px-2 py-1.5 text-[11px] font-bold tracking-widest transition-colors rounded-sm shadow-sm">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+                        <span id="archiveBtnText">[+] TIME ARCHIVE</span>
+                    </button>
+
+                    <h1 class="font-bold text-base text-white flex items-center gap-2 tracking-widest uppercase ml-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#00ffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>
+                        R-ESTATE TERMINAL
+                    </h1>
+                    <div class="flex gap-2 text-xs ml-2" id="top-stats">
+                        <span class="text-[#00ffff]">TOT: 0</span>
+                        <span class="text-[#00ff00]">BUL: 0</span>
+                        <span class="text-[#ff0000]">BER: 0</span>
                     </div>
                 </div>
-                <div id="trendTableContainer" class="overflow-x-auto mt-3 border-t border-[#222] pt-3 hidden">
-                    <!-- JS renders vertical table here -->
-                </div>
-            </div>
-
-            <!-- 2. Hot Tags Ticker (Independent of Filter) -->
-            <div class="w-full p-3 md:px-4">
-                <h2 class="text-[#00ffff] text-[11px] font-bold mb-2 flex items-center gap-1 uppercase">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="22" y1="12" x2="18" y2="12"></line><line x1="6" y1="12" x2="2" y2="12"></line><line x1="12" y1="6" x2="12" y2="2"></line><line x1="12" y1="22" x2="12" y2="18"></line></svg>
-                    HOT TAGS [<span id="hotTagsMonth">--</span>] <span class="text-[#555] ml-2 animate-pulse">● LIVE</span>
-                </h2>
                 
-                <div class="relative w-full" id="tickerContainer">
-                    <div id="tickerView" class="bg-[#111111] border border-[#333333] p-2 h-[42px] flex items-center overflow-hidden cursor-crosshair ticker-animate">
-                        <!-- JS renders current ticker rank -->
+                <div class="flex flex-wrap items-center gap-2">
+                    <!-- Reset Button -->
+                    <button id="resetAllFilters" class="reset-btn border border-[#ff0000] text-[#ff0000] text-[11px] px-3 py-1 font-bold transition-all bg-transparent rounded-sm flex items-center gap-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
+                        [!] RESET
+                    </button>
+
+                    <!-- Dropdown Filters -->
+                    <select id="regionFilter" class="border border-[#333333] bg-black text-xs px-3 py-1 font-bold text-[#00ffff] outline-none hover:bg-[#1a1a1a] cursor-pointer rounded-sm min-w-[110px]">
+                        <option value="ALL">REG: ALL</option>
+                    </select>
+                    <select id="keywordFilter" class="border border-[#333333] bg-black text-xs px-3 py-1 font-bold text-[#00ffff] outline-none hover:bg-[#1a1a1a] cursor-pointer rounded-sm min-w-[110px]">
+                        <option value="ALL">KEY: ALL</option>
+                    </select>
+
+                    <!-- Signal Filter Buttons -->
+                    <div class="flex border border-[#333333] bg-black text-xs" id="signalFilters">
+                        <button class="filter-btn px-3 py-1 font-bold border-r border-[#333333] bg-[#333333] text-white" data-val="ALL">ALL</button>
+                        <button class="filter-btn px-3 py-1 font-bold border-r border-[#333333] text-[#aaaaaa]" data-val="BULL">BULL</button>
+                        <button class="filter-btn px-3 py-1 font-bold border-r border-[#333333] text-[#aaaaaa]" data-val="BEAR">BEAR</button>
+                        <button class="filter-btn px-3 py-1 font-bold text-[#aaaaaa]" data-val="FLAT">FLAT</button>
                     </div>
 
-                    <div id="hoverView" class="absolute top-0 left-0 w-full bg-[#111111] p-4 z-50 hover-panel shadow-[0_15px_40px_rgba(0,0,0,0.9)] border border-[#00ffff] opacity-0 -translate-y-2 invisible">
-                        <!-- JS renders full TOP 5 list -->
+                    <!-- Compact Toggle -->
+                    <button id="compactToggle" class="p-1 border border-[#333333] bg-black hover:bg-[#1a1a1a] text-[#aaaaaa] hover:text-white transition-colors" title="요약 모드 전환">
+                        <svg id="icon-minimize" class="hidden" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 14 10 14 10 20"></polyline><polyline points="20 10 14 10 14 4"></polyline><line x1="14" y1="10" x2="21" y2="3"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>
+                        <svg id="icon-maximize" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- ANALYTICS PANEL -->
+            <div class="flex flex-col border-b border-[#333333] bg-[#0a0a0a]">
+                
+                <!-- 1. Monthly Trend (Accordion) -->
+                <div class="w-full border-b border-[#333333] p-3 md:px-4">
+                    <div class="flex items-center justify-between cursor-pointer group" id="trendToggleBtn">
+                        <h2 class="text-[#00ffff] text-[11px] font-bold flex items-center gap-1 uppercase group-hover:text-white transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg> 
+                            Monthly Trend
+                        </h2>
+                        <div class="text-[10px] text-[#555555] tracking-wider group-hover:text-[#00ffff] transition-colors" id="trendToggleText">
+                            [+] EXPAND
+                        </div>
+                    </div>
+                    <div id="trendTableContainer" class="overflow-x-auto mt-3 border-t border-[#222] pt-3 hidden">
+                        <!-- JS renders vertical table here -->
                     </div>
                 </div>
-                <div id="tickerHint" class="text-[10px] text-[#555555] mt-1 text-right tracking-wider">&gt;&gt; HOVER TO EXPAND FULL RANKING</div>
+
+                <!-- 2. Hot Tags Ticker (Independent of Filter) -->
+                <div class="w-full p-3 md:px-4">
+                    <h2 class="text-[#00ffff] text-[11px] font-bold mb-2 flex items-center gap-1 uppercase">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="22" y1="12" x2="18" y2="12"></line><line x1="6" y1="12" x2="2" y2="12"></line><line x1="12" y1="6" x2="12" y2="2"></line><line x1="12" y1="22" x2="12" y2="18"></line></svg>
+                        HOT TAGS [<span id="hotTagsMonth">--</span>] <span class="text-[#555] ml-2 animate-pulse">● LIVE</span>
+                    </h2>
+                    
+                    <div class="relative w-full" id="tickerContainer">
+                        <div id="tickerView" class="bg-[#111111] border border-[#333333] p-2 h-[42px] flex items-center overflow-hidden cursor-crosshair ticker-animate">
+                            <!-- JS renders current ticker rank -->
+                        </div>
+
+                        <div id="hoverView" class="absolute top-0 left-0 w-full bg-[#111111] p-4 z-50 hover-panel shadow-[0_15px_40px_rgba(0,0,0,0.9)] border border-[#00ffff] opacity-0 -translate-y-2 invisible">
+                            <!-- JS renders full TOP 5 list -->
+                        </div>
+                    </div>
+                    <div id="tickerHint" class="text-[10px] text-[#555555] mt-1 text-right tracking-wider">&gt;&gt; HOVER TO EXPAND FULL RANKING</div>
+                </div>
             </div>
-        </div>
 
-        <!-- Data Grid -->
-        <div class="overflow-x-auto min-h-[500px]">
-            <table class="w-full text-left border-collapse whitespace-nowrap md:whitespace-normal relative z-0">
-                <thead>
-                    <tr class="bg-[#111111] border-b-2 border-[#444444] text-xs text-[#00ffff] tracking-wider uppercase">
-                        <th class="p-2 w-24">Time</th>
-                        <th class="p-2 w-20 text-center">Sig</th>
-                        <th class="p-2 w-28 text-center">Region</th>
-                        <th class="p-2 w-28 text-center">Keyword</th>
-                        <th class="p-2">Headline / AI Summary</th>
-                        <th class="p-2 w-32">Source</th>
-                    </tr>
-                </thead>
-                <tbody class="text-[13px]" id="newsTableBody">
-                    <tr><td colspan="6" class="p-10 text-center text-[#ffb000] animate-pulse font-bold tracking-widest uppercase">BOOTING TERMINAL... LOADING DATA</td></tr>
-                </tbody>
-            </table>
-        </div>
-        
-        <!-- Status Bar -->
-        <div class="p-2 bg-[#111111] border-t border-[#333333] text-[10px] text-[#555555] flex justify-between uppercase tracking-widest">
-            <span>SYS_STATUS: CONNECTED (G_ACTIONS)</span>
-            <span id="updateTime">UPDATE_TIME: --</span>
-            <span>R-ESTATE TERMINAL v3.2 // DYNAMIC_FILTER_ACTIVE</span>
-        </div>
+            <!-- Data Grid -->
+            <div class="overflow-x-auto flex-1 h-[500px] md:h-auto">
+                <table class="w-full text-left border-collapse whitespace-nowrap md:whitespace-normal relative z-0">
+                    <thead>
+                        <tr class="bg-[#111111] border-b-2 border-[#444444] text-xs text-[#00ffff] tracking-wider uppercase">
+                            <th class="p-2 w-24">Time</th>
+                            <th class="p-2 w-20 text-center">Sig</th>
+                            <th class="p-2 w-28 text-center">Region</th>
+                            <th class="p-2 w-28 text-center">Keyword</th>
+                            <th class="p-2">Headline / AI Summary</th>
+                            <th class="p-2 w-32">Source</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-[13px]" id="newsTableBody">
+                        <tr><td colspan="6" class="p-10 text-center text-[#ffb000] animate-pulse font-bold tracking-widest uppercase">BOOTING TERMINAL... LOADING DATA</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Status Bar -->
+            <div class="p-2 bg-[#111111] border-t border-[#333333] text-[10px] text-[#555555] flex justify-between uppercase tracking-widest mt-auto">
+                <span>SYS: LIVE (GH_ACTIONS)</span>
+                <span id="updateTime">UPDATE: --</span>
+                <span>v4.1 // ARCHIVE_TOGGLE_MODE</span>
+            </div>
 
+        </div>
     </div>
 
     <script>
@@ -180,6 +212,8 @@
         let filterSignal = 'ALL';
         let filterRegion = 'ALL';
         let filterKeyword = 'ALL';
+        let filterDate = 'ALL'; 
+        
         let isCompact = false;
         let isTrendExpanded = false;
         
@@ -225,21 +259,101 @@
                     allData.sort((a, b) => new Date(b.collected_at) - new Date(a.collected_at));
                     
                     if (allData.length > 0) {
-                        document.getElementById('updateTime').innerText = `UPDATE_TIME: ${allData[0].collected_at}`;
+                        document.getElementById('updateTime').innerText = `UPDATE: ${allData[0].collected_at}`;
                     }
 
                     calculateAnalytics();
-                    updateFilterOptions(); // 초기 드롭다운 설정
+                    renderSidebarTree();
+                    updateFilterOptions(); 
                     applyFilters();
                     startTicker();
                 },
                 error: function() {
                     document.getElementById('newsTableBody').innerHTML = `<tr><td colspan="6" class="p-10 text-center text-[#ff0000] font-bold uppercase tracking-widest">ERROR: CRITICAL_DATA_FAILURE</td></tr>`;
+                    document.getElementById('sidebar-tree').innerHTML = `<div class="text-[#ff0000] text-center">DIR ERROR</div>`;
                 }
             });
         }
 
-        // --- 4. Analytics Logic ---
+        // --- 4. Sidebar Tree Logic ---
+        function renderSidebarTree() {
+            const tree = {};
+            
+            allData.forEach(d => {
+                if(!d.collected_at) return;
+                const [datePart] = d.collected_at.split(' ');
+                if(!datePart) return;
+                
+                const parts = datePart.split('-');
+                if(parts.length !== 3) return;
+                const [y, m, day] = parts;
+                
+                if(!tree[y]) tree[y] = { count: 0, months: {} };
+                if(!tree[y].months[m]) tree[y].months[m] = { count: 0, days: {} };
+                if(!tree[y].months[m].days[day]) tree[y].months[m].days[day] = 0;
+
+                tree[y].count++;
+                tree[y].months[m].count++;
+                tree[y].months[m].days[day]++;
+            });
+
+            let html = `
+                <div id="btn-all-time" class="date-node date-active cursor-pointer px-2 py-1.5 mb-3 text-xs tracking-widest transition-colors" onclick="setDateFilter('ALL', event)">
+                    > [ALL_TIME]
+                </div>
+            `;
+
+            Object.keys(tree).sort((a,b)=>b-a).forEach(y => {
+                html += `
+                <details open class="mb-2">
+                    <summary class="cursor-pointer text-[#ffb000] hover:text-white font-bold select-none py-1">
+                        ${y}년 <span class="text-[#555] text-[10px]">(${tree[y].count})</span>
+                    </summary>
+                    <div class="pl-3 border-l border-[#333] ml-[5px] mt-1 flex flex-col gap-1">`;
+                
+                Object.keys(tree[y].months).sort((a,b)=>b-a).forEach(m => {
+                    html += `
+                    <details open class="mb-1">
+                        <summary class="cursor-pointer text-[#00ffff] hover:text-white font-bold select-none py-0.5">
+                            ${m}월 <span class="text-[#555] text-[10px]">(${tree[y].months[m].count})</span>
+                        </summary>
+                        <div class="pl-4 border-l border-[#333] ml-[5px] mt-1 flex flex-col gap-0.5 pb-1">`;
+                    
+                    Object.keys(tree[y].months[m].days).sort((a,b)=>b-a).forEach(day => {
+                        const dateStr = `${y}-${m}-${day}`;
+                        const count = tree[y].months[m].days[day];
+                        html += `
+                        <div class="date-node cursor-pointer text-[#aaaaaa] hover:text-white hover:bg-[#222] px-2 py-1 text-[11px] transition-colors rounded-sm flex justify-between" onclick="setDateFilter('${dateStr}', event)">
+                            <span><span class="text-[#555] mr-1">└</span>${day}일</span>
+                            <span class="text-[#555]">(${count})</span>
+                        </div>`;
+                    });
+                    html += `</div></details>`;
+                });
+                html += `</div></details>`;
+            });
+
+            document.getElementById('sidebar-tree').innerHTML = html;
+        }
+
+        window.setDateFilter = function(dateStr, event) {
+            filterDate = dateStr;
+            
+            document.querySelectorAll('.date-node').forEach(n => {
+                n.classList.remove('date-active');
+                n.classList.add('text-[#aaaaaa]');
+            });
+            
+            if (event && event.currentTarget) {
+                event.currentTarget.classList.remove('text-[#aaaaaa]');
+                event.currentTarget.classList.add('date-active');
+            }
+            
+            applyFilters();
+        };
+
+
+        // --- 5. Analytics Logic ---
         function calculateAnalytics() {
             const total = allData.length;
             const bull = allData.filter(d => d.signal === 'BULL').length;
@@ -283,34 +397,30 @@
             }
         }
 
-        // --- 5. UI Rendering & Filter Logic ---
-        
-        /**
-         * 필터링된 결과에 따라 드롭다운 옵션을 동적으로 업데이트
-         */
+        // --- 6. UI Rendering & Filter Logic ---
         function updateFilterOptions() {
             const rSelect = document.getElementById('regionFilter');
             const kSelect = document.getElementById('keywordFilter');
             
-            // 현재 선택값 유지
             const currentR = filterRegion;
             const currentK = filterKeyword;
 
-            // 1. Region 옵션 계산 (현재 선택된 Keyword & Signal에 부합하는 Region들)
             const availableRegions = [...new Set(allData
-                .filter(d => (filterKeyword === 'ALL' || d.keyword === filterKeyword) && (filterSignal === 'ALL' || d.signal === filterSignal))
+                .filter(d => (filterKeyword === 'ALL' || d.keyword === filterKeyword) && 
+                             (filterSignal === 'ALL' || d.signal === filterSignal) &&
+                             (filterDate === 'ALL' || d.collected_at.startsWith(filterDate)))
                 .map(d => d.region)
                 .filter(r => r && r !== 'Unknown')
             )].sort();
 
-            // 2. Keyword 옵션 계산 (현재 선택된 Region & Signal에 부합하는 Keyword들)
             const availableKeywords = [...new Set(allData
-                .filter(d => (filterRegion === 'ALL' || d.region === filterRegion) && (filterSignal === 'ALL' || d.signal === filterSignal))
+                .filter(d => (filterRegion === 'ALL' || d.region === filterRegion) && 
+                             (filterSignal === 'ALL' || d.signal === filterSignal) &&
+                             (filterDate === 'ALL' || d.collected_at.startsWith(filterDate)))
                 .map(d => d.keyword)
                 .filter(k => k && k !== 'Unknown')
             )].sort();
 
-            // Region 드롭다운 갱신
             rSelect.innerHTML = '<option value="ALL">REG: ALL</option>';
             availableRegions.forEach(r => {
                 const opt = document.createElement('option');
@@ -320,7 +430,6 @@
                 rSelect.appendChild(opt);
             });
 
-            // Keyword 드롭다운 갱신
             kSelect.innerHTML = '<option value="ALL">KEY: ALL</option>';
             availableKeywords.forEach(k => {
                 const opt = document.createElement('option');
@@ -336,10 +445,11 @@
                 const sMatch = filterSignal === 'ALL' || d.signal === filterSignal;
                 const rMatch = filterRegion === 'ALL' || d.region === filterRegion;
                 const kMatch = filterKeyword === 'ALL' || d.keyword === filterKeyword;
-                return sMatch && rMatch && kMatch;
+                const dMatch = filterDate === 'ALL' || (d.collected_at && d.collected_at.startsWith(filterDate));
+                return sMatch && rMatch && kMatch && dMatch;
             });
             renderTable(filteredData);
-            updateFilterOptions(); // 연쇄적으로 필터 옵션 업데이트
+            updateFilterOptions();
         }
 
         function renderMonthlyTrend() {
@@ -445,7 +555,7 @@
                         <td class="p-2 text-center"><span class="inline-block w-full text-center px-1 py-0.5 border font-bold text-[11px] tracking-wider ${sigClass}">${item.signal || 'FLAT'}</span></td>
                         <td class="p-2 text-center font-bold text-[#ffb000]">${item.region}</td>
                         <td class="p-2 text-center text-[#ffb000]">[${item.keyword}]</td>
-                        <td class="p-2 py-3">
+                        <td class="p-2 py-3 min-w-[300px]">
                             <a href="${item.link}" target="_blank" class="font-sans font-bold text-white hover:text-[#00ffff] hover:underline leading-snug">
                                 ${item.title}
                             </a>
@@ -461,7 +571,7 @@
                         <td colspan="2" class="p-2 pt-1 pb-4 text-[#cccccc] font-sans leading-relaxed text-[13px]">
                             <div class="flex gap-2 items-start opacity-90">
                                 <span class="text-[#555555] select-none font-mono">&gt;&gt;</span>
-                                <span class="line-clamp-2 md:line-clamp-none">${sum}</span>
+                                <span class="line-clamp-2 md:line-clamp-none whitespace-normal">${sum}</span>
                             </div>
                         </td>
                     </tr>`;
@@ -470,24 +580,43 @@
             body.innerHTML = html;
         }
 
-        // --- 6. Event Listeners ---
+        // --- 7. Event Listeners ---
+        
+        // 🚀 NEW: Archive Sidebar Toggle Logic
+        document.getElementById('toggleArchiveBtn').addEventListener('click', () => {
+            const sidebar = document.getElementById('timeArchiveSidebar');
+            const btnText = document.getElementById('archiveBtnText');
+            
+            const isHidden = sidebar.classList.contains('hidden');
+            if(isHidden) {
+                sidebar.classList.remove('hidden');
+                sidebar.classList.add('flex');
+                btnText.innerText = '[-] CLOSE ARCHIVE';
+            } else {
+                sidebar.classList.add('hidden');
+                sidebar.classList.remove('flex');
+                btnText.innerText = '[+] TIME ARCHIVE';
+            }
+        });
+
         document.getElementById('regionFilter').addEventListener('change', e => { 
-            filterRegion = e.target.value; 
-            applyFilters(); 
+            filterRegion = e.target.value; applyFilters(); 
         });
         
         document.getElementById('keywordFilter').addEventListener('change', e => { 
-            filterKeyword = e.target.value; 
-            applyFilters(); 
+            filterKeyword = e.target.value; applyFilters(); 
         });
 
-        // 모든 필터 초기화 버튼
+        // Reset All Filters Button
         document.getElementById('resetAllFilters').addEventListener('click', () => {
             filterSignal = 'ALL';
             filterRegion = 'ALL';
             filterKeyword = 'ALL';
             
-            // UI 초기화
+            setDateFilter('ALL', null);
+            document.getElementById('btn-all-time').classList.add('date-active');
+            document.getElementById('btn-all-time').classList.remove('text-[#aaaaaa]');
+
             document.querySelectorAll('#signalFilters .filter-btn').forEach(b => {
                 b.classList.remove('bg-[#333333]', 'text-white');
                 b.classList.add('text-[#aaaaaa]');
